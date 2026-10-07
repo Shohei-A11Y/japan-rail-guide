@@ -1,4 +1,6 @@
+import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Notice, Page } from '../components/parts'
+import { describeLine } from '../describe'
 import { RailMap } from '../components/RailMap'
 import { COMPANY_TYPE_LABELS, RAIL_TYPE_LABELS } from '../codes'
 import type { RailData } from '../data'
@@ -18,8 +20,11 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
     <Page>
       <div className="line-hero" style={{ borderColor: line.color }}>
         <LineBadge line={line} link={false} />
-        <p className="line-company">{line.company}</p>
+        <p className="line-company">
+          <a href={href.company(line.company)}>{line.company}</a>
+        </p>
       </div>
+      <Intro text={describeLine(line, data)} />
 
       <dl className="facts">
         <div>
@@ -100,6 +105,8 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
 
       <RailMap data={data} focus={{ type: 'line', id: line.id }} className="rail-map mini" />
 
+      <CommonsPhoto file={line.image} alt={line.displayName} />
+
       <h2>{line.via ? '区間内の駅' : '駅一覧'}</h2>
       <p className="muted small">
         {line.via && '区間内にあるすべての駅です。列車がすべての駅に停車するわけではありません。'}
@@ -130,9 +137,13 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
         })}
       </ol>
 
+      <WikiSummary title={line.wp} />
+
       {sameCompany.length > 0 && (
         <>
-          <h2>{line.company}のほかの路線</h2>
+          <h2>
+            <a href={href.company(line.company)}>{line.company}</a>のほかの路線
+          </h2>
           <div className="badge-row wrap">
             {sameCompany.map((l) => (
               <LineBadge key={l.id} line={l} small />

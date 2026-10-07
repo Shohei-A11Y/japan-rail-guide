@@ -17,6 +17,7 @@ npm test
 npm run build
 npm run data:build       # 公開データ（public/data）を作り直す。-- --refresh で取得し直す
 npm run data:wikidata    # Wikidataとの照合結果（data/overrides/wikidata_*.csv）を作り直す。差分を確認してからコミット
+                         # 一部だけ: npm run data:wikidata -- lines stations companies vehicles のうち必要なもの
 npm run data:boundaries  # 行政区域の簡略化データ（data/static/admin_areas.json）を作り直す。境界が変わったときだけ
 ```
 この作業環境のようにプロキシ経由で外部に出る場合は、`NODE_USE_ENV_PROXY=1` を付けて実行する。
@@ -29,7 +30,8 @@ npm run data:boundaries  # 行政区域の簡略化データ（data/static/admin
 
 ## データの出典
 - 「国土数値情報（鉄道データ）」「国土数値情報（駅別乗降客数データ）」「国土数値情報（行政区域データ）」（国土交通省）を加工して作成（CC BY 4.0）
-- Wikidata（CC0）: 路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日
+- Wikidata（CC0）: 路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日、事業者、車両形式
+- 写真: Wikimedia Commons（写真ごとの撮影者・ライセンスを表示）、解説文: Wikipedia 日本語版（CC BY-SA 4.0）。いずれも閲覧時にブラウザから取得
 - 背景地図: 地理院タイル（淡色地図）
 
 詳しくはアプリ内の「出典・説明」ページを参照。

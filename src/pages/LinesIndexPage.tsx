@@ -3,6 +3,7 @@ import { LineBadge, Page } from '../components/parts'
 import { COMPANY_TYPE_LABELS, PREFECTURES } from '../codes'
 import type { RailData } from '../data'
 import { dateKey } from '../rankings'
+import { href } from '../router'
 import { normalize } from '../search'
 import type { CompanyType, Line } from '../types'
 
@@ -151,7 +152,9 @@ export function LinesIndexPage({ data }: { data: RailData }) {
           <h2>{COMPANY_TYPE_LABELS[g.type]}</h2>
           {g.companies.map((c) => (
             <div key={c.company} className="company">
-              <h3>{c.company}</h3>
+              <h3>
+                <a href={href.company(c.company)}>{c.company}</a>
+              </h3>
               <div className="badge-row wrap">
                 {c.lines.map((l) => (
                   <LineBadge key={l.id} line={l} small />

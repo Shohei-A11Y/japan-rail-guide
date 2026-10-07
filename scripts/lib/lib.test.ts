@@ -3,7 +3,16 @@ import { mainPaths } from './chain'
 import { parseCsv } from './csv'
 import { type Coord, haversineKm, lengthKm, pointInPolygon, projectOnPolyline, simplify, slicePolyline } from './geo'
 import { fnv1a, lineId, stationId, uniqueId } from './ids'
-import { earliestDate, matchLine, nameVariants, romajiFromEnglish, shortElectrification, singleColor } from './match'
+import {
+  earliestDate,
+  isOperatorOf,
+  matchLine,
+  nameVariants,
+  pickWebsite,
+  romajiFromEnglish,
+  shortElectrification,
+  singleColor,
+} from './match'
 import { aggregateByYear, s12Years } from './passengers'
 
 describe('geo', () => {
@@ -244,5 +253,29 @@ describe('所在地の判定と Wikidata の値の整形', () => {
     expect(romajiFromEnglish('Ōtsuka Station (Tokyo)')).toBe('otsuka')
     expect(shortElectrification('直流1500V鉄道電化')).toBe('直流1500V')
     expect(shortElectrification('三相交流による鉄道電化')).toBe('三相交流')
+  })
+})
+
+describe('事業者の照合（車両・公式サイト）', () => {
+  it('短い別名で別の会社に前方一致しない', () => {
+    expect(isOperatorOf('JR東海交通事業', 'JR東')).toBe(false)
+    expect(isOperatorOf('東日本旅客鉄道', '東日本旅客鉄道')).toBe(true)
+    expect(isOperatorOf('東京都', '東京都交通局')).toBe(true)
+  })
+
+  it('公式サイトは優先ランク、なければ最も短いURL', () => {
+    expect(
+      pickWebsite([
+        { url: 'https://www.tokyometro.jp/lang_es/', preferred: false },
+        { url: 'https://www.tokyometro.jp/', preferred: false },
+      ]),
+    ).toBe('https://www.tokyometro.jp/')
+    expect(
+      pickWebsite([
+        { url: 'https://a.jp/', preferred: false },
+        { url: 'https://www.example.co.jp/', preferred: true },
+      ]),
+    ).toBe('https://www.example.co.jp/')
+    expect(pickWebsite([])).toBe('')
   })
 })

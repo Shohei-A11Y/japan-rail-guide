@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Page } from './components/parts'
 import { type RailData, useRailData } from './data'
 import { AboutPage } from './pages/AboutPage'
+import { CompanyPage } from './pages/CompanyPage'
 import { HomePage } from './pages/HomePage'
 import { LinePage } from './pages/LinePage'
 import { LinesIndexPage } from './pages/LinesIndexPage'
@@ -11,6 +12,8 @@ import { PrefsPage } from './pages/PrefsPage'
 import { RankingsPage } from './pages/RankingsPage'
 import { SearchPage } from './pages/SearchPage'
 import { StationPage } from './pages/StationPage'
+import { VehiclePage } from './pages/VehiclePage'
+import { VehiclesPage } from './pages/VehiclesPage'
 import { type Route, useRoute } from './router'
 
 export function App() {
@@ -54,6 +57,12 @@ function Routed({ route, data }: { route: Route; data: RailData }) {
       return <PrefPage key={route.name} data={data} name={route.name} />
     case 'rankings':
       return <RankingsPage data={data} />
+    case 'company':
+      return <CompanyPage key={route.name} data={data} name={route.name} />
+    case 'vehicles':
+      return <VehiclesPage data={data} />
+    case 'vehicle':
+      return <VehiclePage key={route.id} data={data} id={route.id} />
     case 'about':
       return <AboutPage data={data} />
     default:
@@ -76,6 +85,12 @@ function titleOf(route: Route, data: RailData): string {
   if (route.page === 'prefs') return `都道府県から探す | ${app}`
   if (route.page === 'pref') return `${route.name}の鉄道 | ${app}`
   if (route.page === 'rankings') return `ランキング・トリビア | ${app}`
+  if (route.page === 'company') return `${route.name} | ${app}`
+  if (route.page === 'vehicles') return `車両図鑑 | ${app}`
+  if (route.page === 'vehicle') {
+    const v = data.vehicles.get(route.id)
+    if (v) return `${v.name} | ${app}`
+  }
   if (route.page === 'about') return `出典・説明 | ${app}`
   return app
 }

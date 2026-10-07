@@ -58,6 +58,7 @@ export function HomePage({ data }: { data: RailData }) {
         <nav className="home-links">
           <a href={href.lines()}>路線</a>
           <a href={href.prefs()}>都道府県</a>
+          <a href={href.vehicles()}>車両</a>
           <a href={href.rankings()}>ランキング</a>
           <button onClick={random}>ランダム</button>
         </nav>

@@ -23,7 +23,7 @@ export interface Meta {
   /** 乗降客数の年度（例: 2024 = 2024年度） */
   passengerYear: number | null
   sources: Source[]
-  counts: { lines: number; stations: number; companies: number }
+  counts: { lines: number; stations: number; companies: number; vehicles: number }
 }
 
 export interface Line {
@@ -52,6 +52,10 @@ export interface Line {
   electrification?: string[]
   /** 通過する都道府県（駅の所在地から） */
   prefs: string[]
+  /** 日本語版 Wikipedia の記事名 */
+  wp?: string
+  /** Wikimedia Commons の画像ファイル名 */
+  image?: string
   /** 地図上の線形から計算した延長（営業キロではない） */
   lengthKm: number
   bbox: BBox
@@ -84,8 +88,48 @@ export interface Station {
   wikidata?: string
   /** 最新年度の1日あたり乗降客数（駅としての合計）。非公開・データなしは null */
   passengers: number | null
+}
+
+/** 駅ページを開いたときだけ読み込む詳細（station-details.json） */
+export interface StationDetail {
   /** 直近の年度別推移 [年度, 乗降客数|null] */
   history: [number, number | null][]
   /** 最新年度の内訳（元データの代表行ごと） */
   breakdown: PassengerRow[]
+  wp?: string
+  image?: string
+}
+
+export interface Company {
+  /** 国土数値情報の運営会社名（ページの識別子にも使う） */
+  name: string
+  wikidata?: string
+  /** Wikidata の名称 */
+  label?: string
+  wp?: string
+  image?: string
+  /** 設立（Wikidata） */
+  inception?: string
+  headquarters?: string
+  website?: string
+}
+
+/** 車両形式（Wikidata） */
+export interface Vehicle {
+  /** Wikidata の Q番号 */
+  id: string
+  name: string
+  /** 新幹線・電車・気動車・路面電車・地下鉄車両・モノレール・客車 */
+  kind: string
+  /** 運用事業者のうち、このアプリの事業者（国土数値情報の運営会社名）に結び付いたもの */
+  companies: string[]
+  /** Wikidata 上の運用事業者名（過去の事業者を含む） */
+  operators: string[]
+  manufacturers: string[]
+  /** 営業運転開始・引退（Wikidata） */
+  entry?: string
+  retired?: string
+  maxSpeedKmh?: number
+  wp?: string
+  image?: string
 }

@@ -1,17 +1,22 @@
+import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Notice, Page } from '../components/parts'
 import { RailMap } from '../components/RailMap'
-import type { RailData } from '../data'
+import { type RailData, useStationDetail } from '../data'
+import { describeStation } from '../describe'
 import { formatNumber } from '../format'
 import { formatDate } from '../rankings'
 import { href } from '../router'
 import { NotFound } from './NotFound'
 
 export function StationPage({ data, id }: { data: RailData; id: string }) {
+  const detail = useStationDetail(id)
   const st = data.stations.get(id)
   if (!st) return <NotFound />
   const lines = st.lines.map((l) => data.lines.get(l)).filter((l) => l != null)
   const year = data.meta.passengerYear
-  const companies = new Set(st.breakdown.map((b) => b.company))
+  const breakdown = detail?.breakdown ?? []
+  const history = detail?.history ?? []
+  const companies = new Set(breakdown.map((b) => b.company))
 
   return (
     <Page>
@@ -24,6 +29,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
           ))}
         </div>
       </div>
+      <Intro text={describeStation(st, data)} />
 
       <dl className="facts">
         {st.pref && (
@@ -50,6 +56,8 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
         ))}
       </div>
 
+      <CommonsPhoto file={detail?.image} alt={`${st.name}駅`} />
+
       <h2>1日あたりの乗降客数</h2>
       {st.passengers != null ? (
         <>
@@ -62,7 +70,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
               複数の事業者の値の合計です。事業者をまたいで乗り換える人は、それぞれの事業者で数えられています。
             </Notice>
           )}
-          {st.breakdown.length > 0 && (
+          {breakdown.length > 0 && (
             <table className="table">
               <thead>
                 <tr>
@@ -71,7 +79,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
                 </tr>
               </thead>
               <tbody>
-                {st.breakdown.map((b) => (
+                {breakdown.map((b) => (
                   <tr key={`${b.company}|${b.line}`}>
                     <td>
                       {b.company} {b.line}
@@ -87,12 +95,12 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
       ) : (
         <p className="muted">非公開、またはデータがありません。</p>
       )}
-      {st.history.some(([, v]) => v != null) && (
+      {history.some(([, v]) => v != null) && (
         <>
           <h3>年度別の推移</h3>
           <table className="table">
             <tbody>
-              {st.history.map(([y, v]) => (
+              {history.map(([y, v]) => (
                 <tr key={y}>
                   <td>{y}年度</td>
                   <td className="num">{v != null ? `${formatNumber(v)} 人` : 'データなし'}</td>
@@ -102,6 +110,8 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
           </table>
         </>
       )}
+
+      <WikiSummary title={detail?.wp} />
 
       <h2>場所</h2>
       <RailMap data={data} focus={{ type: 'station', id: st.id }} className="rail-map mini" />

@@ -100,3 +100,25 @@ export function romajiFromEnglish(label: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
 }
+
+/**
+ * 車両の運用事業者名が、このアプリの事業者（国土数値情報の運営会社名）を指すか。
+ * 「JR東」のような短い別名が「JR東海交通事業」に前方一致しないよう、
+ * 完全一致か「Wikidata 側の名前が事業者名で始まる」（例: 東京都 → 東京都交通局）だけを認める。
+ */
+export function isOperatorOf(company: string, operator: string): boolean {
+  return company === operator || (operator.length > company.length && operator.startsWith(company))
+}
+
+/** 公式サイトが複数登録されているとき: 優先ランクの値、なければ最も短いURL（トップページのことが多い） */
+export function pickWebsite(values: { url: string; preferred: boolean }[]): string {
+  const preferred = values.filter((v) => v.preferred)
+  const pool = preferred.length ? preferred : values
+  return [...pool].sort((a, b) => a.url.length - b.url.length || a.url.localeCompare(b.url))[0]?.url ?? ''
+}
+
+/** Wikidata の画像（P18）の値「http://commons.wikimedia.org/wiki/Special:FilePath/X.jpg」からファイル名を取り出す */
+export function commonsFileName(value: string): string {
+  const m = /Special:FilePath\/(.+)$/.exec(value)
+  return m ? decodeURIComponent(m[1]).replace(/_/g, ' ') : ''
+}

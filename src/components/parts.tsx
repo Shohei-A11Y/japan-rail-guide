@@ -33,7 +33,8 @@ export function Header() {
       </a>
       <nav>
         <a href={href.lines()}>路線</a>
-        <a href={href.prefs()}>都道府県</a>
+        <a href={href.prefs()}>地域</a>
+        <a href={href.vehicles()}>車両</a>
         <a href={href.rankings()}>ランキング</a>
         <a href={href.search()} aria-label="検索">
           検索

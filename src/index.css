@@ -638,3 +638,34 @@ details.city summary {
     font-size: 0.9rem;
   }
 }
+
+/* 紹介文・写真・解説文 */
+.intro {
+  margin: 12px 0;
+  font-size: 0.95rem;
+}
+.photo {
+  margin: 16px 0;
+}
+.photo img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--border);
+}
+.photo figcaption,
+.wiki .credit {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.wiki p {
+  margin: 0 0 6px;
+}
+.chip.plain {
+  font-weight: 400;
+  color: var(--muted);
+}

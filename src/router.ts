@@ -10,6 +10,9 @@ export type Route =
   | { page: 'prefs' }
   | { page: 'pref'; name: string }
   | { page: 'rankings' }
+  | { page: 'company'; name: string }
+  | { page: 'vehicles' }
+  | { page: 'vehicle'; id: string }
   | { page: 'about' }
   | { page: 'notfound' }
 
@@ -22,6 +25,9 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'prefs' && parts.length === 1) return { page: 'prefs' }
   if (parts[0] === 'pref' && parts[1]) return { page: 'pref', name: parts[1] }
   if (parts[0] === 'rankings' && parts.length === 1) return { page: 'rankings' }
+  if (parts[0] === 'company' && parts[1]) return { page: 'company', name: parts[1] }
+  if (parts[0] === 'vehicles' && parts.length === 1) return { page: 'vehicles' }
+  if (parts[0] === 'vehicle' && parts[1]) return { page: 'vehicle', id: parts[1] }
   if (parts[0] === 'line' && parts[1]) return { page: 'line', id: parts[1] }
   if (parts[0] === 'station' && parts[1]) return { page: 'station', id: parts[1] }
   if (parts[0] === 'lines' && parts.length === 1) return { page: 'lines' }
@@ -38,6 +44,9 @@ export const href = {
   prefs: () => '#/prefs',
   pref: (name: string) => `#/pref/${encodeURIComponent(name)}`,
   rankings: () => '#/rankings',
+  company: (name: string) => `#/company/${encodeURIComponent(name)}`,
+  vehicles: () => '#/vehicles',
+  vehicle: (id: string) => `#/vehicle/${encodeURIComponent(id)}`,
   about: () => '#/about',
 }
 

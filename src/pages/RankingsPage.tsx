@@ -126,7 +126,7 @@ export function RankingsPage({ data }: { data: RailData }) {
         <ol className="item-list ranked">
           {r.companiesByLength.map((c) => (
             <li key={c.name}>
-              <a className="item-name" href={href.search(c.name)}>
+              <a className="item-name" href={href.company(c.name)}>
                 {c.name}
               </a>
               <span className="item-value">{formatKm(c.lengthKm)}</span>
@@ -138,7 +138,7 @@ export function RankingsPage({ data }: { data: RailData }) {
         <ol className="item-list ranked">
           {r.companiesByStations.map((c) => (
             <li key={c.name}>
-              <a className="item-name" href={href.search(c.name)}>
+              <a className="item-name" href={href.company(c.name)}>
                 {c.name}
               </a>
               <span className="item-value">{formatNumber(c.stations)}駅</span>

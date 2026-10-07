@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { unzipSync } from 'fflate'
 import { COMPANY_TYPE_LABELS, DEFAULT_LINE_COLORS } from '../src/codes'
-import type { CompanyType, Line, Meta, Source, Station } from '../src/types'
+import type { Company, CompanyType, Line, Meta, Source, Station, StationDetail, Vehicle } from '../src/types'
 import { mainPaths } from './lib/chain'
 import { parseCsv } from './lib/csv'
 import {
@@ -154,12 +154,18 @@ async function main() {
   const codeToStation = new Map<string, string>()
   const nameLineToStation = new Map<string, string>()
   const stations = new Map<string, Station>()
+  // 駅ページを開いたときだけ読む詳細
+  const details = new Map<string, StationDetail>()
+  const detailOf = (id: string) => {
+    if (!details.has(id)) details.set(id, { history: [], breakdown: [] })
+    return details.get(id)!
+  }
   const sortedGroups = [...groups.values()].sort((a, b) => a.members[0].code.localeCompare(b.members[0].code))
   for (const g of sortedGroups) {
     const [lon, lat] = roundCoord(centroid(g.members.map((m) => m.center)), 6)
     const id = uniqueId(stationId(g.name, lon, lat), usedStationIds)
     const lines = [...new Set(g.members.map((m) => lineIds.get(m.key)).filter((x): x is string => !!x))]
-    stations.set(id, { id, name: g.name, lon, lat, lines, passengers: null, history: [], breakdown: [] })
+    stations.set(id, { id, name: g.name, lon, lat, lines, passengers: null })
     for (const m of g.members) {
       codeToStation.set(m.code, id)
       nameLineToStation.set(`${g.name}|${m.key}`, id)
@@ -201,6 +207,8 @@ async function main() {
     if (r.romaji) st.romaji = r.romaji
     if (r.opened) st.opened = r.opened
     st.wikidata = r.qid
+    if (r.wp) detailOf(st.id).wp = r.wp
+    if (r.image) detailOf(st.id).image = r.image
   }
 
   // --- 乗降客数 ---
@@ -227,10 +235,11 @@ async function main() {
     const st = stations.get(id)!
     const totals = aggregateByYear(rows.map((r) => r.years))
     st.passengers = totals.get(latestYear) ?? null
-    st.history = [...totals]
+    const detail = detailOf(id)
+    detail.history = [...totals]
       .filter(([y]) => y > latestYear - HISTORY_YEARS)
       .sort(([a], [b]) => a - b)
-    st.breakdown = rows
+    detail.breakdown = rows
       .map((r) => ({ r, y: r.years.find((y) => y.year === latestYear) }))
       .filter(({ y }) => y && y.duplicate === 1 && y.availability === 1 && (y.passengers ?? 0) > 0)
       .map(({ r, y }) => ({ company: r.company, line: r.line, value: y!.passengers!, remarks: y!.remarks }))
@@ -285,6 +294,8 @@ async function main() {
       ...(wd?.opened ? { opened: wd.opened } : {}),
       ...(wd?.gauge_mm ? { gaugeMm: wd.gauge_mm.split('|').map(Number) } : {}),
       ...(wd?.electrification ? { electrification: wd.electrification.split('|') } : {}),
+      ...(wd?.wp ? { wp: wd.wp } : {}),
+      ...(wd?.image ? { image: wd.image } : {}),
       prefs: [],
       lengthKm: Math.round(d.segments.reduce((s, seg) => s + lengthKm(seg), 0) * 10) / 10,
       bbox: bboxOf(d.segments.flat()).map((v) => Math.round(v * 1e4) / 1e4) as Line['bbox'],
@@ -416,26 +427,63 @@ async function main() {
       title: 'Wikidata',
       url: 'https://www.wikidata.org/',
       license: 'CC0 1.0',
-      edition: `路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日`,
+      edition: '路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日、事業者、車両形式、Wikipedia記事名・Commons画像名',
       retrievedAt,
       credit: `Wikidata（${retrievedAt}取得）の情報を使用`,
     })
   }
+  // --- 事業者と車両形式（Wikidata） ---
+  const companyRows = new Map(readOverrides('wikidata_companies.csv').map((r) => [r.company, r]))
+  const companyList: Company[] = [...companies].sort((a, b) => a.localeCompare(b, 'ja')).map((name) => {
+    const r = companyRows.get(name)
+    const opt = (k: keyof Company, v?: string) => (v ? { [k]: v } : {})
+    return {
+      name,
+      ...opt('wikidata', r?.qid),
+      ...opt('label', r?.label),
+      ...opt('wp', r?.wp),
+      ...opt('image', r?.image),
+      ...opt('inception', r?.inception),
+      ...opt('headquarters', r?.headquarters),
+      ...opt('website', r?.website),
+    }
+  })
+  const list = (v?: string) => (v ? v.split('|').filter(Boolean) : [])
+  const vehicles: Vehicle[] = readOverrides('wikidata_vehicles.csv').map((r) => ({
+    id: r.qid,
+    name: r.name,
+    kind: r.kind,
+    companies: list(r.companies).filter((c) => companies.has(c)),
+    operators: list(r.operators),
+    manufacturers: list(r.manufacturers),
+    ...(r.entry ? { entry: r.entry } : {}),
+    ...(r.retired ? { retired: r.retired } : {}),
+    ...(r.max_speed_kmh ? { maxSpeedKmh: Number(r.max_speed_kmh) } : {}),
+    ...(r.wp ? { wp: r.wp } : {}),
+    ...(r.image ? { image: r.image } : {}),
+  }))
+
   const meta: Meta = {
     generatedAt: new Date().toISOString(),
     passengerYear: latestYear || null,
     sources,
-    counts: { lines: lines.length, stations: stationList.length, companies: companies.size },
+    counts: { lines: lines.length, stations: stationList.length, companies: companies.size, vehicles: vehicles.length },
   }
   mkdirSync(OUT, { recursive: true })
   writeFileSync(join(OUT, 'meta.json'), JSON.stringify(meta, null, 2) + '\n')
   writeFileSync(join(OUT, 'lines.json'), JSON.stringify(lines))
   writeFileSync(join(OUT, 'stations.json'), JSON.stringify(stationList))
+  writeFileSync(
+    join(OUT, 'station-details.json'),
+    JSON.stringify(Object.fromEntries([...details].sort(([a], [b]) => a.localeCompare(b)))),
+  )
+  writeFileSync(join(OUT, 'companies.json'), JSON.stringify(companyList))
+  writeFileSync(join(OUT, 'vehicles.json'), JSON.stringify(vehicles))
   writeFileSync(join(OUT, 'network.geojson'), JSON.stringify({ type: 'FeatureCollection', features: networkFeatures }))
   console.log(
     `lines=${lines.length} stations=${stationList.length} companies=${companies.size} ` +
       `passengers=${withPassengers} (FY${latestYear}) s12_unmatched=${unmatched} ` +
-      `pref=${withPref} (fallback ${outside}) kana=${stationList.filter((s) => s.kana).length}`,
+      `pref=${withPref} (fallback ${outside}) kana=${stationList.filter((s) => s.kana).length} vehicles=${vehicles.length}`,
   )
 }
 

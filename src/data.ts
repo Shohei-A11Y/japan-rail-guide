@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { Line, Meta, Station } from './types'
+import type { Company, Line, Meta, Station, StationDetail, Vehicle } from './types'
 
 export interface RailData {
   meta: Meta
   lines: Map<string, Line>
   stations: Map<string, Station>
+  companies: Map<string, Company>
+  vehicles: Map<string, Vehicle>
 }
 
 const base = import.meta.env.BASE_URL
@@ -16,28 +18,42 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json()
 }
 
-let pending: Promise<RailData> | null = null
+/** 失敗したら次の呼び出しで取り直せるようにしたうえで、1回だけ読み込む */
+function once<T>(loader: () => Promise<T>): () => Promise<T> {
+  let pending: Promise<T> | null = null
+  return () => {
+    pending ??= loader()
+    pending.catch(() => {
+      pending = null
+    })
+    return pending
+  }
+}
 
-function load(): Promise<RailData> {
-  pending ??= Promise.all([
+const loadData = once(() =>
+  Promise.all([
     getJson<Meta>('meta.json'),
     getJson<Line[]>('lines.json'),
     getJson<Station[]>('stations.json'),
-  ]).then(([meta, lines, stations]) => ({
+    getJson<Company[]>('companies.json'),
+    getJson<Vehicle[]>('vehicles.json'),
+  ]).then(([meta, lines, stations, companies, vehicles]) => ({
     meta,
     lines: new Map(lines.map((l) => [l.id, l])),
     stations: new Map(stations.map((s) => [s.id, s])),
-  }))
-  pending.catch(() => {
-    pending = null
-  })
-  return pending
-}
+    companies: new Map(companies.map((c) => [c.name, c])),
+    vehicles: new Map(vehicles.map((v) => [v.id, v])),
+  })),
+)
 
-export type DataState = { status: 'loading' } | { status: 'error'; error: string } | { status: 'ready'; data: RailData }
+// 乗降客数の内訳・推移などは駅ページでしか使わないので、最初の読み込みから外して後から読む
+const loadDetails = once(() => getJson<Record<string, StationDetail>>('station-details.json'))
 
-export function useRailData(): DataState {
-  const [state, setState] = useState<DataState>({ status: 'loading' })
+export type Loadable<T> = { status: 'loading' } | { status: 'error'; error: string } | { status: 'ready'; data: T }
+export type DataState = Loadable<RailData>
+
+function useLoad<T>(load: () => Promise<T>): Loadable<T> {
+  const [state, setState] = useState<Loadable<T>>({ status: 'loading' })
   useEffect(() => {
     let alive = true
     load().then(
@@ -47,6 +63,14 @@ export function useRailData(): DataState {
     return () => {
       alive = false
     }
-  }, [])
+  }, [load])
   return state
+}
+
+export const useRailData = (): DataState => useLoad(loadData)
+
+/** 駅の詳細。読み込み中・失敗時は undefined、詳細が無い駅は null */
+export function useStationDetail(id: string): StationDetail | null | undefined {
+  const state = useLoad(loadDetails)
+  return state.status === 'ready' ? (state.data[id] ?? null) : undefined
 }

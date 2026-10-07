@@ -1,5 +1,5 @@
 import type { RailData } from './data'
-import type { Line, Station } from './types'
+import type { Line, Station, Vehicle } from './types'
 
 /**
  * 検索用に文字列をそろえる。全角半角・大文字小文字・カタカナとひらがな・長音記号の付いたローマ字の違いを吸収する。
@@ -22,6 +22,7 @@ export interface SearchResult {
   stations: Station[]
   lines: Line[]
   companies: { name: string; lines: Line[] }[]
+  vehicles: Vehicle[]
 }
 
 /** 一致の強さ: 完全一致 3 > 前方一致 2 > 部分一致 1 > 不一致 0 */
@@ -39,7 +40,7 @@ function score(q: string, fields: (string | undefined)[]): number {
 
 export function search(data: RailData, query: string, limit = 50): SearchResult {
   const q = normalize(query)
-  if (!q) return { stations: [], lines: [], companies: [] }
+  if (!q) return { stations: [], lines: [], companies: [], vehicles: [] }
   const stations = [...data.stations.values()]
     .map((s) => ({ s, sc: score(q, [s.name, s.kana, s.romaji]) }))
     .filter((x) => x.sc > 0)
@@ -63,5 +64,11 @@ export function search(data: RailData, query: string, limit = 50): SearchResult 
     .sort((a, b) => b.sc - a.sc || b.lines.length - a.lines.length)
     .slice(0, limit)
     .map(({ name, lines: ls }) => ({ name, lines: ls }))
-  return { stations, lines, companies }
+  const vehicles = [...data.vehicles.values()]
+    .map((v) => ({ v, sc: score(q, [v.name]) }))
+    .filter((x) => x.sc > 0)
+    .sort((a, b) => b.sc - a.sc || a.v.name.localeCompare(b.v.name, 'ja'))
+    .slice(0, limit)
+    .map((x) => x.v)
+  return { stations, lines, companies, vehicles }
 }
