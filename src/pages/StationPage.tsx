@@ -1,3 +1,4 @@
+import { PageActions } from '../components/actions'
 import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Notice, Page } from '../components/parts'
 import { RailMap } from '../components/RailMap'
@@ -29,6 +30,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
           ))}
         </div>
       </div>
+      <PageActions kind="station" id={st.id} title={`${st.name}駅`} />
       <Intro text={describeStation(st, data)} />
 
       <dl className="facts">

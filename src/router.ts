@@ -13,6 +13,7 @@ export type Route =
   | { page: 'company'; name: string }
   | { page: 'vehicles' }
   | { page: 'vehicle'; id: string }
+  | { page: 'favorites' }
   | { page: 'about' }
   | { page: 'notfound' }
 
@@ -27,6 +28,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'rankings' && parts.length === 1) return { page: 'rankings' }
   if (parts[0] === 'company' && parts[1]) return { page: 'company', name: parts[1] }
   if (parts[0] === 'vehicles' && parts.length === 1) return { page: 'vehicles' }
+  if (parts[0] === 'favorites' && parts.length === 1) return { page: 'favorites' }
   if (parts[0] === 'vehicle' && parts[1]) return { page: 'vehicle', id: parts[1] }
   if (parts[0] === 'line' && parts[1]) return { page: 'line', id: parts[1] }
   if (parts[0] === 'station' && parts[1]) return { page: 'station', id: parts[1] }
@@ -46,6 +48,7 @@ export const href = {
   rankings: () => '#/rankings',
   company: (name: string) => `#/company/${encodeURIComponent(name)}`,
   vehicles: () => '#/vehicles',
+  favorites: () => '#/favorites',
   vehicle: (id: string) => `#/vehicle/${encodeURIComponent(id)}`,
   about: () => '#/about',
 }

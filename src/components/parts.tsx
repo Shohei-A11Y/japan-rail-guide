@@ -27,17 +27,18 @@ export function LineBadge({ line, small, link = true }: { line: Line; small?: bo
 export function Header() {
   return (
     <header className="app-header">
-      <a className="brand" href={href.home()}>
+      <a className="brand" href={href.home()} aria-label="日本鉄道ガイド（トップへ）">
         <span className="brand-mark" aria-hidden="true" />
-        日本鉄道ガイド
+        <span className="brand-text">日本鉄道ガイド</span>
       </a>
       <nav>
         <a href={href.lines()}>路線</a>
         <a href={href.prefs()}>地域</a>
         <a href={href.vehicles()}>車両</a>
         <a href={href.rankings()}>ランキング</a>
-        <a href={href.search()} aria-label="検索">
-          検索
+        <a href={href.search()}>検索</a>
+        <a href={href.favorites()} aria-label="お気に入り" title="お気に入り">
+          ★
         </a>
       </nav>
     </header>

@@ -14,6 +14,7 @@ import {
   singleColor,
 } from './match'
 import { aggregateByYear, s12Years } from './passengers'
+import { precacheManifest } from '../vite-sw'
 
 describe('geo', () => {
   it('東京駅〜新大阪駅の直線距離はおよそ400km', () => {
@@ -277,5 +278,16 @@ describe('事業者の照合（車両・公式サイト）', () => {
       ]),
     ).toBe('https://www.example.co.jp/')
     expect(pickWebsite([])).toBe('')
+  })
+})
+
+describe('Service Worker の保存ファイル一覧', () => {
+  it('中身が同じなら版は同じ、変われば変わる', () => {
+    const a = precacheManifest(new Map([['assets/a.js', 'x'], ['data/meta.json', '{}']]))
+    const b = precacheManifest(new Map([['data/meta.json', '{}'], ['assets/a.js', 'x']]))
+    const c = precacheManifest(new Map([['assets/a.js', 'y'], ['data/meta.json', '{}']]))
+    expect(a.version).toBe(b.version)
+    expect(a.version).not.toBe(c.version)
+    expect(a.urls).toEqual(['./', './assets/a.js', './data/meta.json'])
   })
 })

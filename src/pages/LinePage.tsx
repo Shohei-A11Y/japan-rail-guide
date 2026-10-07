@@ -1,3 +1,4 @@
+import { PageActions } from '../components/actions'
 import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Notice, Page } from '../components/parts'
 import { describeLine } from '../describe'
@@ -24,6 +25,7 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
           <a href={href.company(line.company)}>{line.company}</a>
         </p>
       </div>
+      <PageActions kind="line" id={line.id} title={`${line.displayName}（${line.company}）`} />
       <Intro text={describeLine(line, data)} />
 
       <dl className="facts">

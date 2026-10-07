@@ -1,3 +1,4 @@
+import { PageActions } from '../components/actions'
 import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { Page } from '../components/parts'
 import type { RailData } from '../data'
@@ -23,6 +24,7 @@ export function VehiclePage({ data, id }: { data: RailData; id: string }) {
         <a href={href.vehicles()}>車両図鑑</a> ＞ {v.kind}
       </p>
       <h1>{v.name}</h1>
+      <PageActions kind="vehicle" id={v.id} title={v.name} />
       <Intro text={intro} />
       <CommonsPhoto file={v.image} alt={v.name} />
       <dl className="facts">

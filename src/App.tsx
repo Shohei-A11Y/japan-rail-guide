@@ -3,6 +3,7 @@ import { Page } from './components/parts'
 import { type RailData, useRailData } from './data'
 import { AboutPage } from './pages/AboutPage'
 import { CompanyPage } from './pages/CompanyPage'
+import { FavoritesPage } from './pages/FavoritesPage'
 import { HomePage } from './pages/HomePage'
 import { LinePage } from './pages/LinePage'
 import { LinesIndexPage } from './pages/LinesIndexPage'
@@ -14,11 +15,13 @@ import { SearchPage } from './pages/SearchPage'
 import { StationPage } from './pages/StationPage'
 import { VehiclePage } from './pages/VehiclePage'
 import { VehiclesPage } from './pages/VehiclesPage'
+import { useServiceWorkerUpdate } from './pwa'
 import { type Route, useRoute } from './router'
 
 export function App() {
   const route = useRoute()
   const state = useRailData()
+  const updated = useServiceWorkerUpdate()
 
   if (state.status === 'loading') {
     return <div className="loading">読み込み中…</div>
@@ -31,7 +34,17 @@ export function App() {
       </Page>
     )
   }
-  return <Routed route={route} data={state.data} />
+  return (
+    <>
+      <Routed route={route} data={state.data} />
+      {updated && (
+        <div className="update-banner" role="status">
+          新しい版のデータが届きました。
+          <button onClick={() => window.location.reload()}>再読み込み</button>
+        </div>
+      )}
+    </>
+  )
 }
 
 function Routed({ route, data }: { route: Route; data: RailData }) {
@@ -63,6 +76,8 @@ function Routed({ route, data }: { route: Route; data: RailData }) {
       return <VehiclesPage data={data} />
     case 'vehicle':
       return <VehiclePage key={route.id} data={data} id={route.id} />
+    case 'favorites':
+      return <FavoritesPage data={data} />
     case 'about':
       return <AboutPage data={data} />
     default:
@@ -91,6 +106,7 @@ function titleOf(route: Route, data: RailData): string {
     const v = data.vehicles.get(route.id)
     if (v) return `${v.name} | ${app}`
   }
+  if (route.page === 'favorites') return `お気に入り | ${app}`
   if (route.page === 'about') return `出典・説明 | ${app}`
   return app
 }

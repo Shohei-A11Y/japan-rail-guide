@@ -629,13 +629,17 @@ details.city summary {
   padding: 0 16px 32px;
   font-size: 0.85rem;
 }
+.app-header nav a {
+  white-space: nowrap;
+}
 @media (max-width: 480px) {
   .app-header nav {
-    gap: 10px;
-    font-size: 0.8rem;
+    gap: 14px;
+    font-size: 0.85rem;
   }
-  .brand {
-    font-size: 0.9rem;
+  /* 狭い画面ではロゴの文字を隠し、メニューを1行に収める */
+  .brand-text {
+    display: none;
   }
 }
 
@@ -668,4 +672,68 @@ details.city summary {
 .chip.plain {
   font-weight: 400;
   color: var(--muted);
+}
+
+/* お気に入り・共有 */
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.action {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.action.on {
+  border-color: #d9a400;
+  color: #a77d00;
+}
+@media (prefers-color-scheme: dark) {
+  .action.on {
+    color: #ffc93c;
+  }
+}
+.action-message {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 新しい版の案内 */
+.update-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--header);
+  color: var(--header-fg);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+}
+.update-banner button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #2e8b57;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }

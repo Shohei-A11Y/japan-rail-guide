@@ -59,6 +59,9 @@ export function HomePage({ data }: { data: RailData }) {
           <a href={href.lines()}>路線</a>
           <a href={href.prefs()}>都道府県</a>
           <a href={href.vehicles()}>車両</a>
+          <a href={href.favorites()} aria-label="お気に入り" title="お気に入り">
+            ★
+          </a>
           <a href={href.rankings()}>ランキング</a>
           <button onClick={random}>ランダム</button>
         </nav>

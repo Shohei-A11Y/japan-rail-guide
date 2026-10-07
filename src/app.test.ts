@@ -6,6 +6,7 @@ import { dateKey, formatDate, rank } from './rankings'
 import { describeLine, describeStation } from './describe'
 import { parseCommons, parseSummary, stripHtml } from './wiki'
 import type { Station } from './types'
+import { parseFavorites, toggle } from './favorites'
 
 describe('router', () => {
   it('ハッシュからページを判定する', () => {
@@ -128,5 +129,20 @@ describe('紹介文と外部情報の解釈', () => {
 
   it('HTML の作者表記から文字だけを取り出す', () => {
     expect(stripHtml('<span>A &amp; B</span>\n <i>C</i>')).toBe('A & B C')
+  })
+})
+
+describe('お気に入り', () => {
+  it('壊れた値や古い形式は空として読む', () => {
+    expect(parseFavorites(null).station).toEqual([])
+    expect(parseFavorites('{broken').line).toEqual([])
+    expect(parseFavorites('{"station":["S1",2],"line":"x"}')).toEqual({ station: ['S1'], line: [], vehicle: [], company: [] })
+  })
+
+  it('追加は先頭に、もう一度で削除', () => {
+    const a = toggle(parseFavorites(null), 'station', 'S1')
+    const b = toggle(a, 'station', 'S2')
+    expect(b.station).toEqual(['S2', 'S1'])
+    expect(toggle(b, 'station', 'S1').station).toEqual(['S2'])
   })
 })

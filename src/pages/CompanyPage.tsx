@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { StationList } from '../components/lists'
+import { PageActions } from '../components/actions'
 import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Page } from '../components/parts'
 import { RailMap } from '../components/RailMap'
@@ -62,6 +63,7 @@ export function CompanyPage({ data, name }: { data: RailData; name: string }) {
     <Page>
       <h1>{name}</h1>
       {company?.label && company.label !== name && <p className="muted">{company.label}</p>}
+      <PageActions kind="company" id={name} title={name} />
       <Intro text={intro} />
       <dl className="facts">
         <div>
