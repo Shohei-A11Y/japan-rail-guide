@@ -1,8 +1,64 @@
+import { useEffect } from 'react'
+import { Page } from './components/parts'
+import { type RailData, useRailData } from './data'
+import { AboutPage } from './pages/AboutPage'
+import { HomePage } from './pages/HomePage'
+import { LinePage } from './pages/LinePage'
+import { LinesIndexPage } from './pages/LinesIndexPage'
+import { NotFound } from './pages/NotFound'
+import { StationPage } from './pages/StationPage'
+import { type Route, useRoute } from './router'
+
 export function App() {
-  return (
-    <main className="home">
-      <h1>日本鉄道ガイド</h1>
-      <p>全国の鉄道を眺めて楽しむデータベース（準備中）</p>
-    </main>
-  )
+  const route = useRoute()
+  const state = useRailData()
+
+  if (state.status === 'loading') {
+    return <div className="loading">読み込み中…</div>
+  }
+  if (state.status === 'error') {
+    return (
+      <Page>
+        <h1>データを読み込めませんでした</h1>
+        <p className="muted">{state.error}</p>
+      </Page>
+    )
+  }
+  return <Routed route={route} data={state.data} />
+}
+
+function Routed({ route, data }: { route: Route; data: RailData }) {
+  useEffect(() => {
+    document.title = titleOf(route, data)
+  }, [route, data])
+
+  switch (route.page) {
+    case 'home':
+      return <HomePage data={data} />
+    case 'line':
+      return <LinePage key={route.id} data={data} id={route.id} />
+    case 'station':
+      return <StationPage key={route.id} data={data} id={route.id} />
+    case 'lines':
+      return <LinesIndexPage data={data} />
+    case 'about':
+      return <AboutPage data={data} />
+    default:
+      return <NotFound />
+  }
+}
+
+function titleOf(route: Route, data: RailData): string {
+  const app = '日本鉄道ガイド'
+  if (route.page === 'line') {
+    const l = data.lines.get(route.id)
+    if (l) return `${l.displayName}（${l.company}）| ${app}`
+  }
+  if (route.page === 'station') {
+    const s = data.stations.get(route.id)
+    if (s) return `${s.name}駅 | ${app}`
+  }
+  if (route.page === 'lines') return `路線一覧 | ${app}`
+  if (route.page === 'about') return `出典・説明 | ${app}`
+  return app
 }

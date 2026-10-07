@@ -1,0 +1,36 @@
+name: Update data
+on:
+  schedule:
+    # 毎月3日 03:17 UTC（12:17 JST）
+    - cron: '17 3 3 * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # 検証に失敗するとここで止まり、前回のデータがそのまま残る
+      - run: npm run data:build -- --refresh
+      - run: npm test
+      - name: Commit if changed
+        run: |
+          # 生成日時だけが変わった場合はコミットしない
+          if git diff --quiet -- public/data/lines.json public/data/stations.json public/data/network.geojson; then
+            echo "データに変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "データを更新（国土数値情報）"
+          git push

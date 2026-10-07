@@ -1,24 +1,439 @@
 :root {
-  --bg: #ffffff;
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --card: #ffffff;
   --fg: #1a1d21;
-  --accent: #0b5fa5;
+  --muted: #5b6472;
+  --border: #d9dee5;
+  --accent: #0b4f8c;
+  --header: #0e2a47;
+  --header-fg: #ffffff;
+  --notice-bg: #fff7e0;
+  --notice-border: #e8c766;
+  --shadow: 0 6px 24px rgba(15, 30, 50, 0.18);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14181d;
+    --bg: #11151a;
+    --card: #1a2028;
     --fg: #e8ecf0;
-    --accent: #6cb4f0;
+    --muted: #9aa5b3;
+    --border: #2d3540;
+    --accent: #7cc0ff;
+    --header: #0a1d31;
+    --header-fg: #ffffff;
+    --notice-bg: #2b2616;
+    --notice-border: #6b5a24;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   }
+}
+
+* {
+  box-sizing: border-box;
 }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
 }
-.home {
-  padding: 24px 16px;
-}
-.home h1 {
+a {
   color: var(--accent);
+}
+h1 {
+  font-size: 1.5rem;
+  margin: 8px 0 16px;
+}
+h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 10px;
+  padding-left: 10px;
+  border-left: 5px solid var(--accent);
+}
+h3 {
+  font-size: 1rem;
+  margin: 18px 0 8px;
+}
+.muted {
+  color: var(--muted);
+}
+.small {
+  font-size: 0.85rem;
+}
+.loading {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+  color: var(--muted);
+}
+
+/* ヘッダー */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--header);
+  color: var(--header-fg);
+}
+.app-header a {
+  color: inherit;
+  text-decoration: none;
+}
+.app-header nav {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.brand-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 4px solid #2e8b57;
+  box-shadow: 0 0 0 2px #fff;
+}
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+/* 路線の札 */
+.line-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+.line-badge.small {
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+.line-badge-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f5fbf;
+  font-size: 0.75em;
+}
+.badge-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  overflow-x: auto;
+}
+.badge-row.wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* 地図 */
+.rail-map {
+  width: 100%;
+}
+.rail-map.full {
+  position: fixed;
+  inset: 0;
+}
+.rail-map.mini {
+  height: 300px;
+  margin: 16px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.map-tip .maplibregl-popup-content {
+  padding: 4px 10px;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--fg);
+}
+
+/* トップ */
+.home-overlay {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+.home-title,
+.home-links {
+  pointer-events: auto;
+  background: var(--card);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.home-title {
+  padding: 8px 14px;
+  border-left: 6px solid #2e8b57;
+}
+.home-title h1 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.home-title p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.home-links {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+.home-links a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.home-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.8rem;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.sheet {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.sheet-title {
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  font-size: 1.3rem;
+}
+.sheet-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.button {
+  display: block;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--card);
+  text-align: center;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* 路線ページ */
+.line-hero {
+  padding: 12px 0 14px;
+  border-bottom: 6px solid;
+}
+.line-hero .line-badge {
+  font-size: 1.6rem;
+  padding: 6px 16px;
+}
+.line-company {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.facts div {
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.facts dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+.notice {
+  padding: 8px 12px;
+  background: var(--notice-bg);
+  border-left: 4px solid var(--notice-border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* 駅の並び（路線図風） */
+.route {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 4px;
+}
+.route li {
+  position: relative;
+  padding: 8px 0 8px 32px;
+  border-left: 6px solid var(--line-color);
+}
+.route li:first-child {
+  border-image: linear-gradient(transparent 50%, var(--line-color) 50%) 1;
+}
+.route li:last-child {
+  border-image: linear-gradient(var(--line-color) 50%, transparent 50%) 1;
+}
+.route li::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -10px;
+  border: 4px solid var(--line-color);
+  border-radius: 50%;
+  background: var(--card);
+}
+.route li:has(.badge-row)::before {
+  top: 20px;
+  margin-top: 0;
+}
+.route-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+.route-pax {
+  margin-left: 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 駅ページ（駅名標風） */
+.station-sign {
+  margin: 8px 0 16px;
+  background: #ffffff;
+  color: #111111;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.station-sign-name {
+  padding: 18px 12px 12px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.station-sign-bar {
+  display: flex;
+  height: 14px;
+}
+.station-sign-bar span {
+  flex: 1;
+}
+.big-number {
+  margin: 4px 0 8px;
+  font-size: 2rem;
+  font-weight: 800;
+}
+.big-number span {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  font-size: 0.9rem;
+}
+.table th,
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 路線一覧 */
+.search {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+}
+.company {
+  margin-bottom: 12px;
+}
+.company h3 {
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+}
+.sources li {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
 }

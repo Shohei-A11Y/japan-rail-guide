@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-10-07T13:59:43.581Z",
+  "passengerYear": 2024,
+  "sources": [
+    {
+      "id": "ksj-n02",
+      "title": "国土数値情報（鉄道データ）",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html",
+      "license": "CC BY 4.0",
+      "edition": "2025年度版（2025年12月31日時点）",
+      "retrievedAt": "2026-10-07"
+    },
+    {
+      "id": "ksj-s12",
+      "title": "国土数値情報（駅別乗降客数データ）",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2024.html",
+      "license": "CC BY 4.0",
+      "edition": "2024年度版",
+      "retrievedAt": "2026-10-07"
+    }
+  ],
+  "counts": {
+    "lines": 596,
+    "stations": 9046,
+    "companies": 176
+  }
+}

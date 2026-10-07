@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "data:build": "tsx scripts/build-data.ts"
   },
   "dependencies": {
+    "maplibre-gl": "^5.24.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -23,7 +25,9 @@
     "@vitejs/plugin-react": "^4.3.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "fflate": "^0.8.3",
     "globals": "^15.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^5.4.0",
