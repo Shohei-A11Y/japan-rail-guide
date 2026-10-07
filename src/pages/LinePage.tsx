@@ -3,6 +3,7 @@ import { RailMap } from '../components/RailMap'
 import { COMPANY_TYPE_LABELS, RAIL_TYPE_LABELS } from '../codes'
 import type { RailData } from '../data'
 import { formatKm, formatNumber } from '../format'
+import { formatDate } from '../rankings'
 import { href } from '../router'
 import { NotFound } from './NotFound'
 
@@ -37,7 +38,36 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
           <dt>地図上の延長</dt>
           <dd>約{formatKm(line.lengthKm)}</dd>
         </div>
+        {line.opened && (
+          <div>
+            <dt>開業</dt>
+            <dd>{formatDate(line.opened)}</dd>
+          </div>
+        )}
+        {line.gaugeMm && (
+          <div>
+            <dt>軌間</dt>
+            <dd>{line.gaugeMm.map((g) => `${g}mm`).join('・')}</dd>
+          </div>
+        )}
+        {line.electrification && (
+          <div>
+            <dt>電化方式</dt>
+            <dd>{line.electrification.join('・')}</dd>
+          </div>
+        )}
       </dl>
+      {line.prefs.length > 0 && (
+        <p className="muted small">
+          通る都道府県:{' '}
+          {line.prefs.map((p, i) => (
+            <span key={p}>
+              {i > 0 && '・'}
+              <a href={href.pref(p)}>{p}</a>
+            </span>
+          ))}
+        </p>
+      )}
       {line.via && (
         <p className="via">
           {line.via.map((v, i) => {
@@ -61,7 +91,7 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
       </Notice>
       {line.wikidata && (
         <p className="muted small">
-          Wikidata:{' '}
+          開業日・軌間・電化方式・名前・色の出典: Wikidata{' '}
           <a href={`https://www.wikidata.org/wiki/${line.wikidata}`} target="_blank" rel="noopener">
             {line.wikidata}
           </a>

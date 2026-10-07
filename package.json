@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "data:build": "tsx scripts/build-data.ts",
-    "data:wikidata": "tsx scripts/sync-wikidata.ts"
+    "data:wikidata": "tsx scripts/sync-wikidata.ts",
+    "data:boundaries": "tsx scripts/build-boundaries.ts"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",

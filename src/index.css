@@ -142,7 +142,9 @@ h3 {
 }
 .badge-row {
   display: flex;
+  align-items: center;
   gap: 6px;
+  white-space: nowrap;
   margin-top: 4px;
   overflow-x: auto;
 }
@@ -440,4 +442,199 @@ h3 {
 .sources li {
   margin-bottom: 8px;
   overflow-wrap: anywhere;
+}
+
+/* 共通の一覧（駅・路線・ランキング） */
+.item-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.item-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.item-list li:last-child {
+  border-bottom: 0;
+}
+.item-list.ranked {
+  counter-reset: rank;
+}
+.item-list.ranked li::before {
+  counter-increment: rank;
+  content: counter(rank);
+  min-width: 1.6em;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.item-list.compact li {
+  padding: 6px 4px;
+}
+.item-main {
+  flex: 1;
+  min-width: 0;
+}
+.item-name {
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+}
+.item-sub {
+  margin-left: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.item-value {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 都道府県 */
+.pref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.pref-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--fg);
+}
+.pref-name {
+  font-weight: 700;
+}
+details.city {
+  margin-bottom: 6px;
+}
+details.city summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-weight: 600;
+}
+
+/* 絞り込み */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.filters select {
+  margin-top: 2px;
+  padding: 8px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--fg);
+}
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* トリビアのチップ */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* トップの検索・ボタン */
+.home-search input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.home-links button {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-hint.as-button {
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sheet.tall {
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+
+/* 駅名標の読み仮名 */
+.station-sign-kana {
+  padding-top: 14px;
+  font-size: 0.95rem;
+  letter-spacing: 0.3em;
+  color: #444;
+}
+.station-sign-kana + .station-sign-name {
+  padding-top: 2px;
+}
+
+.app-footer {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+  font-size: 0.85rem;
+}
+@media (max-width: 480px) {
+  .app-header nav {
+    gap: 10px;
+    font-size: 0.8rem;
+  }
+  .brand {
+    font-size: 0.9rem;
+  }
 }

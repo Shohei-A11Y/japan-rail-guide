@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T14:26:39.569Z",
+  "generatedAt": "2026-10-07T14:54:09.630Z",
   "passengerYear": 2024,
   "sources": [
     {
@@ -21,13 +21,22 @@
       "credit": "「国土数値情報（駅別乗降客数データ）」（国土交通省）（https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2024.html）（2026-10-07取得）を加工して作成"
     },
     {
+      "id": "ksj-n03",
+      "title": "国土数値情報（行政区域データ）",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2025.html",
+      "license": "CC BY 4.0",
+      "edition": "2025年1月1日時点",
+      "retrievedAt": "2026-10-07",
+      "credit": "「国土数値情報（行政区域データ）」（国土交通省）（https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2025.html）（2026-10-07取得）を加工して作成"
+    },
+    {
       "id": "wikidata",
       "title": "Wikidata",
       "url": "https://www.wikidata.org/",
       "license": "CC0 1.0",
-      "edition": "路線の表示名・路線色（565路線）",
+      "edition": "路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日",
       "retrievedAt": "2026-10-07",
-      "credit": "Wikidata（2026-10-07取得）の路線名・路線色を使用"
+      "credit": "Wikidata（2026-10-07取得）の情報を使用"
     }
   ],
   "counts": {

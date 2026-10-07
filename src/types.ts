@@ -44,6 +44,14 @@ export interface Line {
   wikidata?: string
   /** ミニ新幹線などの通称区間: 実際に走る路線と区間（両端の駅名） */
   via?: { line: string; from: string; to: string }[]
+  /** 開業日（Wikidata。精度に応じて YYYY / YYYY-MM / YYYY-MM-DD） */
+  opened?: string
+  /** 軌間（mm、Wikidata） */
+  gaugeMm?: number[]
+  /** 電化方式（Wikidata。例: 直流1500V, 非電化） */
+  electrification?: string[]
+  /** 通過する都道府県（駅の所在地から） */
+  prefs: string[]
   /** 地図上の線形から計算した延長（営業キロではない） */
   lengthKm: number
   bbox: BBox
@@ -64,6 +72,16 @@ export interface Station {
   lon: number
   lat: number
   lines: string[]
+  /** 所在地（国土数値情報の行政区域から判定） */
+  pref?: string
+  city?: string
+  /** 読み仮名（ひらがな、Wikidata） */
+  kana?: string
+  /** 検索用のローマ字（Wikidataの英語名から） */
+  romaji?: string
+  /** 開業日（Wikidata） */
+  opened?: string
+  wikidata?: string
   /** 最新年度の1日あたり乗降客数（駅としての合計）。非公開・データなしは null */
   passengers: number | null
   /** 直近の年度別推移 [年度, 乗降客数|null] */

@@ -2,6 +2,7 @@ import maplibregl, { type ExpressionSpecification, type GeoJSONSource, type MapG
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { type RailData, networkUrl } from '../data'
+import type { BBox } from '../types'
 
 export type MapSelection = { type: 'line'; id: string } | { type: 'station'; id: string }
 
@@ -10,6 +11,10 @@ interface Props {
   /** 強調して表示する路線・駅。指定すると、その範囲に地図を合わせる */
   focus?: MapSelection
   onSelect?: (selection: MapSelection | null) => void
+  /** focus が無いときに地図を合わせる範囲 */
+  bounds?: BBox
+  /** 地図を動かし終えたときの表示範囲とズーム */
+  onViewChange?: (bounds: BBox, zoom: number) => void
   className?: string
 }
 
@@ -34,11 +39,13 @@ const lineWidth = (extra = 0): ExpressionSpecification => {
   return ['interpolate', ['linear'], ['zoom'], 4, w(2, 1), 10, w(4, 2.5), 15, w(8, 6)]
 }
 
-export function RailMap({ data, focus, onSelect, className }: Props) {
+export function RailMap({ data, focus, onSelect, bounds, onViewChange, className }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
+  const onViewChangeRef = useRef(onViewChange)
+  onViewChangeRef.current = onViewChange
 
   const stationGeoJson = useMemo(
     () => ({
@@ -164,6 +171,11 @@ export function RailMap({ data, focus, onSelect, className }: Props) {
       onSelectRef.current?.(f.layer.id === 'lines' ? { type: 'line', id } : { type: 'station', id })
     })
 
+    map.on('moveend', () => {
+      const b = map.getBounds()
+      onViewChangeRef.current?.([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], map.getZoom())
+    })
+
     mapRef.current = map
     return () => {
       popup.remove()
@@ -204,11 +216,15 @@ export function RailMap({ data, focus, onSelect, className }: Props) {
       } else if (stationId) {
         const st = data.stations.get(stationId)
         if (st) map.jumpTo({ center: [st.lon, st.lat], zoom: 13 })
+      } else if (bounds) {
+        map.fitBounds(bounds, { padding: 30, duration: 0, maxZoom: 13 })
       }
     }
     if (map.isStyleLoaded()) apply()
     else map.once('load', apply)
-  }, [focus?.type, focus?.id, data])
+    // bounds は配列なので、値で比較できるよう文字列にして依存に入れる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.type, focus?.id, data, bounds?.join(',')])
 
   return <div ref={container} className={className ?? 'rail-map'} />
 }

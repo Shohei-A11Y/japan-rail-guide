@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // GitHub Pages（静的ホスト）でも共有URLが使えるよう、ハッシュでルーティングする
 export type Route =
@@ -6,12 +6,22 @@ export type Route =
   | { page: 'line'; id: string }
   | { page: 'station'; id: string }
   | { page: 'lines' }
+  | { page: 'search'; q: string }
+  | { page: 'prefs' }
+  | { page: 'pref'; name: string }
+  | { page: 'rankings' }
   | { page: 'about' }
   | { page: 'notfound' }
 
 export function parseRoute(hash: string): Route {
-  const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
+  const [path, query = ''] = hash.replace(/^#\/?/, '').split('?')
+  const parts = path.split('/').filter(Boolean).map(decodeURIComponent)
+  const params = new URLSearchParams(query)
   if (parts.length === 0) return { page: 'home' }
+  if (parts[0] === 'search' && parts.length === 1) return { page: 'search', q: params.get('q') ?? '' }
+  if (parts[0] === 'prefs' && parts.length === 1) return { page: 'prefs' }
+  if (parts[0] === 'pref' && parts[1]) return { page: 'pref', name: parts[1] }
+  if (parts[0] === 'rankings' && parts.length === 1) return { page: 'rankings' }
   if (parts[0] === 'line' && parts[1]) return { page: 'line', id: parts[1] }
   if (parts[0] === 'station' && parts[1]) return { page: 'station', id: parts[1] }
   if (parts[0] === 'lines' && parts.length === 1) return { page: 'lines' }
@@ -24,15 +34,23 @@ export const href = {
   line: (id: string) => `#/line/${encodeURIComponent(id)}`,
   station: (id: string) => `#/station/${encodeURIComponent(id)}`,
   lines: () => '#/lines',
+  search: (q = '') => (q ? `#/search?q=${encodeURIComponent(q)}` : '#/search'),
+  prefs: () => '#/prefs',
+  pref: (name: string) => `#/pref/${encodeURIComponent(name)}`,
+  rankings: () => '#/rankings',
   about: () => '#/about',
 }
 
 export function useRoute(): Route {
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
+  const current = useRef(route)
   useEffect(() => {
     const onChange = () => {
-      setRoute(parseRoute(window.location.hash))
-      window.scrollTo(0, 0)
+      const next = parseRoute(window.location.hash)
+      // 検索語の入力中（同じ検索ページ内）はスクロール位置を保つ
+      if (!(current.current.page === 'search' && next.page === 'search')) window.scrollTo(0, 0)
+      current.current = next
+      setRoute(next)
     }
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)

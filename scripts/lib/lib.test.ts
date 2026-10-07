@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { mainPaths } from './chain'
 import { parseCsv } from './csv'
-import { type Coord, haversineKm, lengthKm, projectOnPolyline, simplify, slicePolyline } from './geo'
+import { type Coord, haversineKm, lengthKm, pointInPolygon, projectOnPolyline, simplify, slicePolyline } from './geo'
 import { fnv1a, lineId, stationId, uniqueId } from './ids'
-import { matchLine, nameVariants, singleColor } from './match'
+import { earliestDate, matchLine, nameVariants, romajiFromEnglish, shortElectrification, singleColor } from './match'
 import { aggregateByYear, s12Years } from './passengers'
 
 describe('geo', () => {
@@ -208,5 +208,41 @@ describe('Wikidata との照合', () => {
     expect(singleColor(['9acd32'])).toBe('#9ACD32')
     expect(singleColor(['FF0000', '00FF00'])).toBeNull()
     expect(singleColor(['red'])).toBeNull()
+  })
+})
+
+describe('所在地の判定と Wikidata の値の整形', () => {
+  it('穴のある多角形の内外を判定する', () => {
+    const outer: Coord[] = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+      [0, 0],
+    ]
+    const hole: Coord[] = [
+      [4, 4],
+      [6, 4],
+      [6, 6],
+      [4, 6],
+      [4, 4],
+    ]
+    expect(pointInPolygon([1, 1], [outer, hole])).toBe(true)
+    expect(pointInPolygon([5, 5], [outer, hole])).toBe(false)
+    expect(pointInPolygon([11, 5], [outer, hole])).toBe(false)
+  })
+
+  it('開業日は最も古い値を精度に合わせて返す', () => {
+    expect(earliestDate(['1903-04-01T00:00:00Z/11', '1885-03-01T00:00:00Z/11'])).toBe('1885-03-01')
+    expect(earliestDate(['1874-01-01T00:00:00Z/9'])).toBe('1874')
+    expect(earliestDate(['1931-03-01T00:00:00Z/10'])).toBe('1931-03')
+    expect(earliestDate([])).toBe('')
+  })
+
+  it('英語名から検索用のローマ字を作り、電化方式の表記を短くする', () => {
+    expect(romajiFromEnglish('Tōkyō Station')).toBe('tokyo')
+    expect(romajiFromEnglish('Ōtsuka Station (Tokyo)')).toBe('otsuka')
+    expect(shortElectrification('直流1500V鉄道電化')).toBe('直流1500V')
+    expect(shortElectrification('三相交流による鉄道電化')).toBe('三相交流')
   })
 })

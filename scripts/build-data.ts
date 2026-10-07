@@ -12,7 +12,18 @@ import { COMPANY_TYPE_LABELS, DEFAULT_LINE_COLORS } from '../src/codes'
 import type { CompanyType, Line, Meta, Source, Station } from '../src/types'
 import { mainPaths } from './lib/chain'
 import { parseCsv } from './lib/csv'
-import { type Coord, bboxOf, centroid, lengthKm, projectOnPolyline, roundCoord, simplify, slicePolyline } from './lib/geo'
+import {
+  type Coord,
+  bboxOf,
+  centroid,
+  haversineKm,
+  lengthKm,
+  pointInPolygon,
+  projectOnPolyline,
+  roundCoord,
+  simplify,
+  slicePolyline,
+} from './lib/geo'
 import { lineId, stationId, uniqueId } from './lib/ids'
 import { type S12Year, aggregateByYear, s12Years } from './lib/passengers'
 
@@ -20,6 +31,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const RAW = join(ROOT, 'data/raw')
 const OVERRIDES = join(ROOT, 'data/overrides')
 const OUT = join(ROOT, 'public/data')
+const ADMIN_AREAS = join(ROOT, 'data/static/admin_areas.json')
 
 // 国土数値情報の版。新しい版が出たらここを更新する（zipの番号と「○年度版」の年はデータによってずれる）
 const N02 = { edition: '25', label: '2025年度版（2025年12月31日時点）', page: 'KsjTmplt-N02-2025.html' }
@@ -154,6 +166,43 @@ async function main() {
     }
   }
 
+  // --- 駅の所在地（行政区域）と Wikidata の読み仮名・開業日 ---
+  const admin: {
+    source: { title: string; edition: string; url: string; license: string; retrievedAt: string }
+    areas: { pref: string; city: string; bbox: [number, number, number, number]; polygons: Coord[][][] }[]
+  } = JSON.parse(readFileSync(ADMIN_AREAS, 'utf8'))
+  let outside = 0
+  for (const st of stations.values()) {
+    const p: Coord = [st.lon, st.lat]
+    const inBox = (b: number[], m = 0) => p[0] >= b[0] - m && p[0] <= b[2] + m && p[1] >= b[1] - m && p[1] <= b[3] + m
+    let area = admin.areas.find((a) => inBox(a.bbox) && a.polygons.some((poly) => pointInPolygon(p, poly)))
+    if (!area) {
+      // 埋立地や境界の簡略化で外れた駅は、500m以内で最も近い境界の市区町村にする
+      outside++
+      let best = { d: 0.5, a: undefined as (typeof admin.areas)[number] | undefined }
+      for (const a of admin.areas) {
+        if (!inBox(a.bbox, 0.01)) continue
+        for (const poly of a.polygons) for (const c of poly[0]) {
+          const d = haversineKm(p, c)
+          if (d < best.d) best = { d, a }
+        }
+      }
+      area = best.a
+    }
+    if (area) {
+      st.pref = area.pref
+      st.city = area.city
+    }
+  }
+  for (const r of readOverrides('wikidata_stations.csv')) {
+    const st = stations.get(r.station_id)
+    if (!st || st.name !== r.name) continue
+    if (r.kana) st.kana = r.kana
+    if (r.romaji) st.romaji = r.romaji
+    if (r.opened) st.opened = r.opened
+    st.wikidata = r.qid
+  }
+
   // --- 乗降客数 ---
   const rowsByStation = new Map<string, { company: string; line: string; years: S12Year[] }[]>()
   let unmatched = 0
@@ -233,6 +282,10 @@ async function main() {
       color,
       colorSource,
       ...(wd?.qid ? { wikidata: wd.qid } : {}),
+      ...(wd?.opened ? { opened: wd.opened } : {}),
+      ...(wd?.gauge_mm ? { gaugeMm: wd.gauge_mm.split('|').map(Number) } : {}),
+      ...(wd?.electrification ? { electrification: wd.electrification.split('|') } : {}),
+      prefs: [],
       lengthKm: Math.round(d.segments.reduce((s, seg) => s + lengthKm(seg), 0) * 10) / 10,
       bbox: bboxOf(d.segments.flat()).map((v) => Math.round(v * 1e4) / 1e4) as Line['bbox'],
       stations: [...new Set(ordered.map((o) => o.id))],
@@ -295,6 +348,7 @@ async function main() {
       colorSource: first.color ? 'override' : 'default',
       ...(first.wikidata ? { wikidata: first.wikidata } : {}),
       via,
+      prefs: [],
       lengthKm: Math.round(segments.reduce((sum, seg) => sum + lengthKm(seg), 0) * 10) / 10,
       bbox: bboxOf(segments.flat()).map((v) => Math.round(v * 1e4) / 1e4) as Line['bbox'],
       stations: stopIds,
@@ -309,6 +363,11 @@ async function main() {
     })
   }
 
+  // 通過する都道府県（駅の並び順で最初に現れた順）
+  for (const l of lines) {
+    l.prefs = [...new Set(l.stations.map((id) => stations.get(id)!.pref).filter((p): p is string => !!p))]
+  }
+
   lines.sort((a, b) => a.id.localeCompare(b.id))
   const stationList = [...stations.values()].sort((a, b) => a.id.localeCompare(b.id))
 
@@ -320,6 +379,9 @@ async function main() {
   if (stationList.some((s) => s.lines.length === 0)) problems.push('路線に属さない駅がある')
   const withPassengers = stationList.filter((s) => s.passengers != null).length
   if (withPassengers < stationList.length * 0.6) problems.push(`乗降客数のある駅が少なすぎる: ${withPassengers}`)
+  const withPref = stationList.filter((s) => s.pref).length
+  if (withPref < stationList.length * 0.99) problems.push(`所在地が分からない駅が多すぎる: ${stationList.length - withPref}`)
+  if (new Set(stationList.map((s) => s.pref)).size < 47) problems.push('駅のない都道府県がある')
   for (const t of Object.keys(COMPANY_TYPE_LABELS)) {
     if (!lines.some((l) => l.companyType === Number(t))) problems.push(`事業者種別${t}の路線が無い`)
   }
@@ -334,6 +396,15 @@ async function main() {
     credit: `「${src.title}」（国土交通省）（${src.url}）（${retrievedAt}取得）を加工して作成`,
   })
   const sources: Source[] = [ksj(SOURCES.n02, n02Zip.retrievedAt), ksj(SOURCES.s12, s12Zip.retrievedAt)]
+  sources.push({
+    id: 'ksj-n03',
+    title: admin.source.title,
+    url: admin.source.url,
+    license: admin.source.license,
+    edition: admin.source.edition,
+    retrievedAt: admin.source.retrievedAt,
+    credit: `「${admin.source.title}」（国土交通省）（${admin.source.url}）（${admin.source.retrievedAt}取得）を加工して作成`,
+  })
   if (wikidataRows.length) {
     const retrievedAt =
       wikidataRows
@@ -345,9 +416,9 @@ async function main() {
       title: 'Wikidata',
       url: 'https://www.wikidata.org/',
       license: 'CC0 1.0',
-      edition: `路線の表示名・路線色（${wikidataRows.length}路線）`,
+      edition: `路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日`,
       retrievedAt,
-      credit: `Wikidata（${retrievedAt}取得）の路線名・路線色を使用`,
+      credit: `Wikidata（${retrievedAt}取得）の情報を使用`,
     })
   }
   const meta: Meta = {
@@ -363,7 +434,8 @@ async function main() {
   writeFileSync(join(OUT, 'network.geojson'), JSON.stringify({ type: 'FeatureCollection', features: networkFeatures }))
   console.log(
     `lines=${lines.length} stations=${stationList.length} companies=${companies.size} ` +
-      `passengers=${withPassengers} (FY${latestYear}) s12_unmatched=${unmatched}`,
+      `passengers=${withPassengers} (FY${latestYear}) s12_unmatched=${unmatched} ` +
+      `pref=${withPref} (fallback ${outside}) kana=${stationList.filter((s) => s.kana).length}`,
   )
 }
 

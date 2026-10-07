@@ -15,8 +15,11 @@ npm run typecheck    # 型チェック
 npm run lint
 npm test
 npm run build
-npm run data:build   # 公開データ（public/data）を作り直す。-- --refresh で取得し直す
+npm run data:build       # 公開データ（public/data）を作り直す。-- --refresh で取得し直す
+npm run data:wikidata    # Wikidataとの照合結果（data/overrides/wikidata_*.csv）を作り直す。差分を確認してからコミット
+npm run data:boundaries  # 行政区域の簡略化データ（data/static/admin_areas.json）を作り直す。境界が変わったときだけ
 ```
+この作業環境のようにプロキシ経由で外部に出る場合は、`NODE_USE_ENV_PROXY=1` を付けて実行する。
 
 ## データの流れ
 1. `scripts/build-data.ts` が国土数値情報（鉄道・駅別乗降客数）をダウンロードし、`data/overrides/` の補正表を当てて、
@@ -25,7 +28,8 @@ npm run data:build   # 公開データ（public/data）を作り直す。-- --re
 2. GitHub Actions の `Update data` が毎月3日に 1. を実行し、データに変化があればコミットする。続けて `Deploy to GitHub Pages` が公開する。
 
 ## データの出典
-- 「国土数値情報（鉄道データ）」「国土数値情報（駅別乗降客数データ）」（国土交通省）を加工して作成（CC BY 4.0）
+- 「国土数値情報（鉄道データ）」「国土数値情報（駅別乗降客数データ）」「国土数値情報（行政区域データ）」（国土交通省）を加工して作成（CC BY 4.0）
+- Wikidata（CC0）: 路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日
 - 背景地図: 地理院タイル（淡色地図）
 
 詳しくはアプリ内の「出典・説明」ページを参照。

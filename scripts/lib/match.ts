@@ -71,3 +71,32 @@ export function singleColor(colors: string[]): string | null {
   const valid = [...new Set(colors.map((c) => c.trim().toUpperCase()).filter((c) => /^[0-9A-F]{6}$/.test(c)))]
   return valid.length === 1 ? `#${valid[0]}` : null
 }
+
+/** "1872-10-14T00:00:00Z/11" のような値の中で最も古いものを、精度に応じて YYYY / YYYY-MM / YYYY-MM-DD で返す */
+export function earliestDate(values: string[]): string {
+  const dates = values
+    .map((v) => {
+      const [time, prec] = v.split('/')
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(time)
+      if (!m) return null
+      const p = Number(prec)
+      const text = p >= 11 ? `${m[1]}-${m[2]}-${m[3]}` : p === 10 ? `${m[1]}-${m[2]}` : `${m[1]}`
+      return { sort: time, text }
+    })
+    .filter((d): d is { sort: string; text: string } => d != null)
+    .sort((a, b) => a.sort.localeCompare(b.sort))
+  return dates[0]?.text ?? ''
+}
+
+/** 「直流1500V鉄道電化」→「直流1500V」 */
+export const shortElectrification = (label: string) => label.replace(/(による)?鉄道電化$/, '')
+
+/** 英語名「Tōkyō Station」→ 検索用のローマ字「tokyo」 */
+export function romajiFromEnglish(label: string): string {
+  return label
+    .replace(/\s*\(.*\)$/, '')
+    .replace(/\s+(Station|Stop|Tram Stop)$/i, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}

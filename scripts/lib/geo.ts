@@ -126,3 +126,16 @@ export function slicePolyline(line: Coord[], from: number, to: number): Coord[] 
   }
   return out
 }
+
+/** 点が多角形（外周＋穴）の内側にあるか（レイキャスティング法） */
+export function pointInPolygon(p: Coord, rings: Coord[][]): boolean {
+  let inside = false
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i]
+      const [xj, yj] = ring[j]
+      if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) inside = !inside
+    }
+  }
+  return inside
+}

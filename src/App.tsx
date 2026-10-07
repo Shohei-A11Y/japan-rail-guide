@@ -6,6 +6,10 @@ import { HomePage } from './pages/HomePage'
 import { LinePage } from './pages/LinePage'
 import { LinesIndexPage } from './pages/LinesIndexPage'
 import { NotFound } from './pages/NotFound'
+import { PrefPage } from './pages/PrefPage'
+import { PrefsPage } from './pages/PrefsPage'
+import { RankingsPage } from './pages/RankingsPage'
+import { SearchPage } from './pages/SearchPage'
 import { StationPage } from './pages/StationPage'
 import { type Route, useRoute } from './router'
 
@@ -41,6 +45,15 @@ function Routed({ route, data }: { route: Route; data: RailData }) {
       return <StationPage key={route.id} data={data} id={route.id} />
     case 'lines':
       return <LinesIndexPage data={data} />
+    case 'search':
+      // 入力中は URL を書き換えるだけ（hashchange は起きない）。リンクで別の検索語に移ったときは作り直す
+      return <SearchPage key={route.q} data={data} initial={route.q} />
+    case 'prefs':
+      return <PrefsPage data={data} />
+    case 'pref':
+      return <PrefPage key={route.name} data={data} name={route.name} />
+    case 'rankings':
+      return <RankingsPage data={data} />
     case 'about':
       return <AboutPage data={data} />
     default:
@@ -59,6 +72,10 @@ function titleOf(route: Route, data: RailData): string {
     if (s) return `${s.name}駅 | ${app}`
   }
   if (route.page === 'lines') return `路線一覧 | ${app}`
+  if (route.page === 'search') return `検索 | ${app}`
+  if (route.page === 'prefs') return `都道府県から探す | ${app}`
+  if (route.page === 'pref') return `${route.name}の鉄道 | ${app}`
+  if (route.page === 'rankings') return `ランキング・トリビア | ${app}`
   if (route.page === 'about') return `出典・説明 | ${app}`
   return app
 }

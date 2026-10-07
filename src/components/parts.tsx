@@ -32,8 +32,12 @@ export function Header() {
         日本鉄道ガイド
       </a>
       <nav>
-        <a href={href.lines()}>路線一覧</a>
-        <a href={href.about()}>出典・説明</a>
+        <a href={href.lines()}>路線</a>
+        <a href={href.prefs()}>都道府県</a>
+        <a href={href.rankings()}>ランキング</a>
+        <a href={href.search()} aria-label="検索">
+          検索
+        </a>
       </nav>
     </header>
   )
@@ -44,6 +48,9 @@ export function Page({ children }: { children: ReactNode }) {
     <>
       <Header />
       <main className="page">{children}</main>
+      <footer className="app-footer">
+        <a href={href.about()}>出典・説明</a>
+      </footer>
     </>
   )
 }

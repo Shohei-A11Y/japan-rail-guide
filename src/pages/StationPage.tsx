@@ -2,6 +2,8 @@ import { LineBadge, Notice, Page } from '../components/parts'
 import { RailMap } from '../components/RailMap'
 import type { RailData } from '../data'
 import { formatNumber } from '../format'
+import { formatDate } from '../rankings'
+import { href } from '../router'
 import { NotFound } from './NotFound'
 
 export function StationPage({ data, id }: { data: RailData; id: string }) {
@@ -14,6 +16,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
   return (
     <Page>
       <div className="station-sign">
+        {st.kana && <div className="station-sign-kana">{st.kana}</div>}
         <div className="station-sign-name">{st.name}</div>
         <div className="station-sign-bar">
           {lines.map((l) => (
@@ -21,6 +24,24 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
           ))}
         </div>
       </div>
+
+      <dl className="facts">
+        {st.pref && (
+          <div>
+            <dt>所在地</dt>
+            <dd>
+              <a href={href.pref(st.pref)}>{st.pref}</a>
+              {st.city}
+            </dd>
+          </div>
+        )}
+        {st.opened && (
+          <div>
+            <dt>開業</dt>
+            <dd>{formatDate(st.opened)}</dd>
+          </div>
+        )}
+      </dl>
 
       <h2>乗り入れ路線</h2>
       <div className="badge-row wrap">
@@ -87,6 +108,14 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
       <p className="muted small">
         北緯 {st.lat.toFixed(4)}° 東経 {st.lon.toFixed(4)}°（同名で300m以内の駅をまとめた代表点）
       </p>
+      {st.wikidata && (
+        <p className="muted small">
+          読み仮名・開業日の出典: Wikidata{' '}
+          <a href={`https://www.wikidata.org/wiki/${st.wikidata}`} target="_blank" rel="noopener">
+            {st.wikidata}
+          </a>
+        </p>
+      )}
     </Page>
   )
 }
