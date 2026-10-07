@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { mainPaths } from './chain'
 import { parseCsv } from './csv'
-import { type Coord, haversineKm, lengthKm, projectOnPolyline, simplify } from './geo'
+import { type Coord, haversineKm, lengthKm, projectOnPolyline, simplify, slicePolyline } from './geo'
 import { fnv1a, lineId, stationId, uniqueId } from './ids'
+import { matchLine, nameVariants, singleColor } from './match'
 import { aggregateByYear, s12Years } from './passengers'
 
 describe('geo', () => {
@@ -138,5 +139,74 @@ describe('passengers', () => {
     const totals = aggregateByYear([s12Years(props([1, 1], [2, 1], [0, 50]))])
     expect(totals.get(2011)).toBeNull()
     expect(totals.get(2012)).toBe(50)
+  })
+})
+
+describe('slicePolyline', () => {
+  it('距離で指定した区間だけを切り出す', () => {
+    const line: Coord[] = [
+      [135, 35],
+      [135.1, 35],
+      [135.2, 35],
+    ]
+    const total = lengthKm(line)
+    const part = slicePolyline(line, total * 0.25, total * 0.75)
+    expect(part[0][0]).toBeCloseTo(135.05, 4)
+    expect(part[part.length - 1][0]).toBeCloseTo(135.15, 4)
+    expect(part).toHaveLength(3)
+  })
+})
+
+describe('Wikidata との照合', () => {
+  const item = (qid: string, label: string, aliases: string[], operators: string[], colors: string[] = []) => ({
+    qid,
+    label,
+    aliases,
+    operators,
+    colors,
+  })
+  const items = [
+    item('Q1', '東北本線', ['東北線'], ['東日本旅客鉄道']),
+    item('Q2', '東海道本線', ['東海道線'], ['東日本旅客鉄道', '西日本旅客鉄道']),
+    item('Q3', '東海道線', ['東海道本線'], ['東日本旅客鉄道']),
+    item('Q4', '京急本線', ['京急線'], ['京浜急行電鉄']),
+    item('Q5', '東京メトロ丸ノ内線', ['丸ノ内線'], ['東京地下鉄']),
+    item('Q6', '御堂筋線', [], ['大阪市高速電気軌道']),
+    item('Q7', '東武伊勢崎線', ['伊勢崎線'], ['東武鉄道']),
+    item('Q8', '東武スカイツリーライン', ['伊勢崎線'], ['東武鉄道']),
+    item('Q9', '都営地下鉄浅草線', ['浅草線'], ['東京都交通局']),
+  ]
+
+  it('名前の候補を元の名前に近い順に作る', () => {
+    expect(nameVariants('東北線')).toEqual(['東北線', '東北本線'])
+    expect(nameVariants('4号線丸ノ内線')).toEqual(['4号線丸ノ内線', '丸ノ内線', '4号線丸ノ内本線', '丸ノ内本線'])
+    expect(nameVariants('1号線(御堂筋線)')[1]).toBe('御堂筋線')
+    expect(nameVariants('東海道新幹線')).toEqual(['東海道新幹線'])
+  })
+
+  it('法令上の線名・番号付きの名前・事業者名の省略を照合できる', () => {
+    expect(matchLine('東日本旅客鉄道', '東北線', items)?.qid).toBe('Q1')
+    expect(matchLine('京浜急行電鉄', '本線', items)?.qid).toBe('Q4')
+    expect(matchLine('東京地下鉄', '4号線丸ノ内線', items)?.qid).toBe('Q5')
+    expect(matchLine('大阪市高速電気軌道', '1号線(御堂筋線)', items)?.qid).toBe('Q6')
+    expect(matchLine('東京都', '1号線浅草線', items)?.qid).toBe('Q9')
+  })
+
+  it('元の名前と完全に一致する項目を優先する', () => {
+    expect(matchLine('東日本旅客鉄道', '東海道線', items)?.qid).toBe('Q3')
+  })
+
+  it('候補が複数の項目に分かれたら該当なしにする', () => {
+    expect(matchLine('東武鉄道', '伊勢崎線', items)).toBeNull()
+  })
+
+  it('運営者が違う項目とは照合しない', () => {
+    expect(matchLine('西日本旅客鉄道', '東北線', items)).toBeNull()
+  })
+
+  it('路線色は1つに決まるときだけ使う', () => {
+    expect(singleColor(['9acd32'])).toBe('#9ACD32')
+    expect(singleColor(['FF0000', '00FF00'])).toBeNull()
+    expect(singleColor(['red'])).toBeNull()
   })
 })

@@ -106,3 +106,23 @@ export function bboxOf(coords: Iterable<Coord>): BBox {
   }
   return [w, s, e, n]
 }
+
+/** 折れ線のうち、始点からの距離 from〜to (km) の部分を切り出す */
+export function slicePolyline(line: Coord[], from: number, to: number): Coord[] {
+  const out: Coord[] = []
+  const lerp = (a: Coord, b: Coord, t: number): Coord => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+  let acc = 0
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1]
+    const b = line[i]
+    const len = haversineKm(a, b)
+    const start = acc
+    const end = acc + len
+    acc = end
+    if (end < from || start > to || len === 0) continue
+    if (out.length === 0) out.push(start >= from ? a : lerp(a, b, (from - start) / len))
+    out.push(end <= to ? b : lerp(a, b, (to - start) / len))
+    if (end >= to) break
+  }
+  return out
+}

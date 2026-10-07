@@ -14,11 +14,10 @@ export function AboutPage({ data }: { data: RailData }) {
       <ul className="sources">
         {meta.sources.map((s) => (
           <li key={s.id}>
-            「{s.title}」（国土交通省）
+            {s.credit}（{s.edition}、{s.license}）{' '}
             <a href={s.url} target="_blank" rel="noopener">
               {s.url}
             </a>
-            （{s.retrievedAt}取得、{s.edition}、{s.license}）を加工して作成
           </li>
         ))}
         <li>
@@ -32,9 +31,12 @@ export function AboutPage({ data }: { data: RailData }) {
 
       <h2>データについての注意</h2>
       <ul>
-        <li>路線名は国土数値情報の表記です。法令上の線名（例:「東北線」）で入っているため、ふだんの呼び名と範囲が違う路線があります（例: 山手線は品川〜新宿〜田端の区間）。</li>
+        <li>路線の範囲は国土数値情報の区分（法令上の線名ごと）です。表示名が通称でも、ふだんの呼び名と範囲が違う路線があります（例: 山手線は品川〜新宿〜田端の区間）。</li>
         <li>路線の「延長」は地図上の線形から計算した値で、営業キロではありません。</li>
-        <li>線の色は、公式の路線カラーが登録されていない路線では種別ごとの既定色です。</li>
+        <li>
+          路線の表示名と線の色は、Wikidataに登録された名前・路線色を使っています。Wikidataの路線色は、事業者の色指定と細部が異なる場合があります。Wikidataに色が無い路線は種別ごとの既定色です。
+        </li>
+        <li>山形新幹線・秋田新幹線は、在来線（奥羽本線・田沢湖線）の区間を新幹線として表示しています。</li>
         <li>駅は、同じ名前で300m以内にある駅を1つにまとめています。</li>
         <li>
           乗降客数は{meta.passengerYear}年度の1日あたりの値です。一部の駅は非公開です。複数の事業者が乗り入れる駅は各事業者の値の合計で、事業者をまたぐ乗換客は重複して数えられます。

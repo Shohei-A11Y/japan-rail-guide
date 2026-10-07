@@ -288,6 +288,10 @@ h3 {
   font-size: 1.6rem;
   padding: 6px 16px;
 }
+.via {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
 .line-company {
   margin: 8px 0 0;
   color: var(--muted);

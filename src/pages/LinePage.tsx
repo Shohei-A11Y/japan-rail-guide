@@ -38,21 +38,49 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
           <dd>約{formatKm(line.lengthKm)}</dd>
         </div>
       </dl>
+      {line.via && (
+        <p className="via">
+          {line.via.map((v, i) => {
+            const base = data.lines.get(v.line)
+            return (
+              <span key={i}>
+                {i > 0 && '・'}
+                {base ? <a href={href.line(base.id)}>{base.displayName}</a> : null}（{v.from}〜{v.to}）
+              </span>
+            )
+          })}
+          を走る通称区間です。
+        </p>
+      )}
       <Notice>
         延長は地図上の線形から計算した値で、営業キロとは異なります。
         {line.colorSource === 'default' && '線の色は種別ごとの既定色で、公式の路線カラーではありません。'}
-        {line.displayName === line.name && '路線名は国土数値情報の表記（法令上の線名など）です。'}
+        {line.colorSource === 'wikidata' && '線の色はWikidataに登録された路線色です（事業者の色指定と細部が異なる場合があります）。'}
+        {line.displayName !== line.name && !line.via && `国土数値情報での路線名は「${line.name}」です。`}
+        {line.displayName === line.name && !line.via && '路線名は国土数値情報の表記（法令上の線名など）です。'}
       </Notice>
+      {line.wikidata && (
+        <p className="muted small">
+          Wikidata:{' '}
+          <a href={`https://www.wikidata.org/wiki/${line.wikidata}`} target="_blank" rel="noopener">
+            {line.wikidata}
+          </a>
+        </p>
+      )}
 
       <RailMap data={data} focus={{ type: 'line', id: line.id }} className="rail-map mini" />
 
-      <h2>駅一覧</h2>
-      <p className="muted small">並び順は地図上の線形から自動で推定しています。支線のある路線では順番が前後することがあります。</p>
+      <h2>{line.via ? '区間内の駅' : '駅一覧'}</h2>
+      <p className="muted small">
+        {line.via && '区間内にあるすべての駅です。列車がすべての駅に停車するわけではありません。'}
+        並び順は地図上の線形から自動で推定しています。支線のある路線では順番が前後することがあります。
+      </p>
       <ol className="route" style={{ ['--line-color' as string]: line.color }}>
         {line.stations.map((sid) => {
           const st = data.stations.get(sid)
           if (!st) return null
-          const transfers = st.lines.filter((l) => l !== line.id)
+          // 通称区間では、実際に走っている元の路線は乗換として出さない
+          const transfers = st.lines.filter((l) => l !== line.id && !line.via?.some((v) => v.line === l))
           return (
             <li key={sid}>
               <a className="route-name" href={href.station(sid)}>

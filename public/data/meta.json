@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T13:59:43.581Z",
+  "generatedAt": "2026-10-07T14:26:39.569Z",
   "passengerYear": 2024,
   "sources": [
     {
@@ -8,7 +8,8 @@
       "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html",
       "license": "CC BY 4.0",
       "edition": "2025年度版（2025年12月31日時点）",
-      "retrievedAt": "2026-10-07"
+      "retrievedAt": "2026-10-07",
+      "credit": "「国土数値情報（鉄道データ）」（国土交通省）（https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html）（2026-10-07取得）を加工して作成"
     },
     {
       "id": "ksj-s12",
@@ -16,11 +17,21 @@
       "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2024.html",
       "license": "CC BY 4.0",
       "edition": "2024年度版",
-      "retrievedAt": "2026-10-07"
+      "retrievedAt": "2026-10-07",
+      "credit": "「国土数値情報（駅別乗降客数データ）」（国土交通省）（https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2024.html）（2026-10-07取得）を加工して作成"
+    },
+    {
+      "id": "wikidata",
+      "title": "Wikidata",
+      "url": "https://www.wikidata.org/",
+      "license": "CC0 1.0",
+      "edition": "路線の表示名・路線色（565路線）",
+      "retrievedAt": "2026-10-07",
+      "credit": "Wikidata（2026-10-07取得）の路線名・路線色を使用"
     }
   ],
   "counts": {
-    "lines": 596,
+    "lines": 598,
     "stations": 9046,
     "companies": 176
   }
