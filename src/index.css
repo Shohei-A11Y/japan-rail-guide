@@ -1,0 +1,24 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1a1d21;
+  --accent: #0b5fa5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14181d;
+    --fg: #e8ecf0;
+    --accent: #6cb4f0;
+  }
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+.home {
+  padding: 24px 16px;
+}
+.home h1 {
+  color: var(--accent);
+}
