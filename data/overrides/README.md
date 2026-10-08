@@ -12,6 +12,7 @@
 | `wikidata_vehicles.csv` | 同上（図鑑に載せる車両形式） | qid, name, kind, companies, operators, manufacturers, entry, retired, max_speed_kmh, wp, image, sitelinks, source |
 | `gsi_elevations.csv` | 駅の代表点の標高（地理院タイルの標高タイル）。**手で編集しない**。`npm run data:elevation` が、表に無い駅と座標が変わった駅だけ取得する。座標（coord）が今の駅と違う行は使われない | station_id, name, coord, elevation_m, dem, source |
 | `wikidata_line_links.csv` | 自動照合できなかった路線を、人が確認して Wikidata 項目に結ぶ表（照合より優先） | company, line, qid, source |
+| `line_through.csv` | 直通運転（例: 山手線の環状運転）。路線の駅の並びと地図の線に、ほかの路線の区間をつなげる。行の順に from → to でつなぎ、最初の from と最後の to が同じなら環状運転。元の路線自身の区間も1行で書く | company, line, base_line, from, to, source |
 | `line_colors.csv` | 路線カラー（Wikidataの値を上書きしたいとき） | company, line, color, source |
 | `line_aliases.csv` | 表示名（Wikidataの値を上書きしたいとき） | company, line, display_name, source |
 | `virtual_lines.csv` | 通称区間（ミニ新幹線など、既存路線の一部区間を別の路線として見せる）。同じ name の行は区間をつなげる | name, company, base_line, from, to, shinkansen(yes/no), color, wikidata, source |

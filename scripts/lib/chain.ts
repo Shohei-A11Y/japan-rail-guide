@@ -1,4 +1,4 @@
-import { type Coord, lengthKm } from './geo'
+import { type Coord, haversineKm, lengthKm } from './geo'
 
 /**
  * 路線を構成する区間（LineString）の集まりから、駅の並び順を決めるための
@@ -81,4 +81,70 @@ function orient(coords: Coord[]): Coord[] {
   // 主に東西方向の路線は西を始点、南北方向の路線は北を始点にする
   const flip = dx >= dy ? a[0] > b[0] : a[1] < b[1]
   return flip ? coords.slice().reverse() : coords
+}
+
+/**
+ * 区間の集まりの上で、2地点に最も近い区間の端点どうしを結ぶ最短経路（座標列）を返す。
+ * 元データの区間の端点がわずかにずれてつながっていない箇所は、gapKm 以内なら同じ点とみなす。
+ * つながっていなければ null。
+ */
+export function shortestPath(segments: Coord[][], from: Coord, to: Coord, gapKm = 0.05): Coord[] | null {
+  const nodes: Coord[] = []
+  const nodeIndex = new Map<string, number>()
+  const nodeOf = (c: Coord) => {
+    const k = `${c[0].toFixed(6)},${c[1].toFixed(6)}`
+    if (!nodeIndex.has(k)) {
+      nodeIndex.set(k, nodes.length)
+      nodes.push(c)
+    }
+    return nodeIndex.get(k)!
+  }
+  type Edge = { to: number; coords: Coord[]; len: number }
+  const adj: Edge[][] = []
+  const addEdge = (a: number, b: number, coords: Coord[], len: number) => {
+    ;(adj[a] ??= []).push({ to: b, coords, len })
+    ;(adj[b] ??= []).push({ to: a, coords: coords.slice().reverse(), len })
+  }
+  for (const seg of segments) {
+    if (seg.length < 2) continue
+    addEdge(nodeOf(seg[0]), nodeOf(seg[seg.length - 1]), seg, lengthKm(seg))
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const d = haversineKm(nodes[i], nodes[j])
+      if (d > 0 && d <= gapKm) addEdge(i, j, [nodes[i], nodes[j]], d)
+    }
+  }
+  const nearest = (p: Coord) => {
+    let best = 0
+    for (let i = 1; i < nodes.length; i++) if (haversineKm(p, nodes[i]) < haversineKm(p, nodes[best])) best = i
+    return best
+  }
+  if (nodes.length === 0) return null
+  const start = nearest(from)
+  const goal = nearest(to)
+  // 単純なダイクストラ法（1路線の端点は多くて数千）
+  const dist = new Array<number>(nodes.length).fill(Infinity)
+  const prev = new Array<{ from: number; edge: Edge } | undefined>(nodes.length)
+  const done = new Uint8Array(nodes.length)
+  dist[start] = 0
+  for (;;) {
+    let u = -1
+    for (let i = 0; i < nodes.length; i++) if (!done[i] && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i
+    if (u < 0 || u === goal) break
+    done[u] = 1
+    for (const e of adj[u] ?? []) {
+      if (dist[u] + e.len < dist[e.to]) {
+        dist[e.to] = dist[u] + e.len
+        prev[e.to] = { from: u, edge: e }
+      }
+    }
+  }
+  if (dist[goal] === Infinity) return null
+  const edges: Edge[] = []
+  for (let n = goal; n !== start; n = prev[n]!.from) edges.push(prev[n]!.edge)
+  edges.reverse()
+  const coords: Coord[] = [nodes[start]]
+  for (const e of edges) coords.push(...e.coords.slice(1))
+  return coords
 }

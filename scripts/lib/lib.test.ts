@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mainPaths } from './chain'
+import { mainPaths, shortestPath } from './chain'
 import { csvRow, parseCsv } from './csv'
 import { decodeRgbPng, demValue, tilePixel } from './dem'
 import { type Coord, haversineKm, lengthKm, pointInPolygon, projectOnPolyline, simplify, slicePolyline } from './geo'
@@ -360,5 +360,35 @@ describe('標高タイル', () => {
   })
   it('CSVの値をクォートする', () => {
     expect(csvRow(['a', 'b,c', 'd"e', 1])).toBe('a,"b,c","d""e",1')
+  })
+})
+
+describe('shortestPath', () => {
+  // A(0,0)─B(1,0)─C(2,0) の本線と、B から北へ大回りする支線 B─D(1,1)─C。B の端点は 1m ずれている
+  const main1: Coord[] = [
+    [0, 0],
+    [1, 0],
+  ]
+  const main2: Coord[] = [
+    [1.00001, 0],
+    [2, 0],
+  ]
+  const loop: Coord[] = [
+    [1, 0],
+    [1, 1],
+    [2, 0],
+  ]
+  it('ずれた端点をつなぎ、短い方の経路を返す', () => {
+    const path = shortestPath([main1, main2, loop], [0, 0.001], [2, 0.001])!
+    expect(path[0]).toEqual([0, 0])
+    expect(path[path.length - 1]).toEqual([2, 0])
+    expect(path.some((c) => c[1] === 1)).toBe(false)
+  })
+  it('つながっていなければ null', () => {
+    const far: Coord[] = [
+      [5, 5],
+      [6, 5],
+    ]
+    expect(shortestPath([main1, far], [0, 0], [6, 5])).toBeNull()
   })
 })

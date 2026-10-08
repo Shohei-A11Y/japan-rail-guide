@@ -44,6 +44,12 @@ export interface Line {
   wikidata?: string
   /** ミニ新幹線などの通称区間: 実際に走る路線と区間（両端の駅名） */
   via?: { line: string; from: string; to: string }[]
+  /** 直通運転でほかの路線の線路を走る区間（山手線の東京〜品川など）。駅の並びと地図の線はこの区間を含む */
+  through?: { line: string; from: string; to: string }[]
+  /** 環状運転（駅の並びの最後から最初に戻る） */
+  loop?: true
+  /** 直通区間を含む運転区間全体の延長（地図上、km） */
+  serviceKm?: number
   /** 開業日（Wikidata。精度に応じて YYYY / YYYY-MM / YYYY-MM-DD） */
   opened?: string
   /** 国土数値情報の時点より後に廃止された路線の廃止日（Wikidata） */
@@ -58,7 +64,7 @@ export interface Line {
   wp?: string
   /** Wikimedia Commons の画像ファイル名 */
   image?: string
-  /** 地図上の線形から計算した延長（営業キロではない） */
+  /** 地図上の線形から計算した延長（営業キロではない）。直通区間は含まない */
   lengthKm: number
   bbox: BBox
   /** 主経路に沿った駅の並び（駅ID） */

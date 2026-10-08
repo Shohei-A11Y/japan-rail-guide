@@ -48,6 +48,12 @@ export function ElevationProfile({ data, line }: { data: RailData; line: Line })
       prev = st
       if (st.elevation != null) points.push({ st, km, elevation: st.elevation })
     }
+    // 環状運転は起点に戻るところまで描く
+    const first = data.stations.get(line.stations[0])
+    if (line.loop && first && prev && first.elevation != null) {
+      km += distanceKm(prev, first)
+      points.push({ st: first, km, elevation: first.elevation })
+    }
     if (points.length < 3) return null
     const values = points.map((p) => p.elevation)
     const min = Math.min(...values)
@@ -126,7 +132,7 @@ export function ElevationProfile({ data, line }: { data: RailData; line: Line })
             <path d={path} fill="none" stroke={line.color} strokeWidth={2} strokeLinejoin="round" />
             {points.map((p, i) => (
               <circle
-                key={p.st.id}
+                key={i}
                 className="profile-dot"
                 cx={x(p.km)}
                 cy={y(p.elevation)}

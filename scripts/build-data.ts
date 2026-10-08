@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { unzipSync } from 'fflate'
 import { COMPANY_TYPE_LABELS, DEFAULT_LINE_COLORS } from '../src/codes'
 import type { Company, CompanyType, Line, Meta, Source, Station, StationDetail, Vehicle } from '../src/types'
-import { mainPaths } from './lib/chain'
+import { mainPaths, shortestPath } from './lib/chain'
 import { parseCsv } from './lib/csv'
 import {
   type Coord,
@@ -22,7 +22,6 @@ import {
   projectOnPolyline,
   roundCoord,
   simplify,
-  slicePolyline,
 } from './lib/geo'
 import { lineId, stationId, uniqueId } from './lib/ids'
 import { type S12Year, aggregateByYear, s12Years } from './lib/passengers'
@@ -319,8 +318,36 @@ async function main() {
       },
     })
   }
-  // --- 通称区間（ミニ新幹線など） ---
+  // --- 既存路線の区間を切り出す（通称区間・直通区間で使う） ---
   const problems: string[] = []
+  /**
+   * company の base_line のうち from〜to の区間（線形と、from → to の向きに並んだ駅）。
+   * 主経路（mainPaths）は支線側を通ることがある（例: 東海道線は品鶴線経由）ので、線路のつながりから最短経路を探す。
+   */
+  const section = (company: string, baseLine: string, fromName: string, toName: string, label: string) => {
+    const key = `${company}|${baseLine}`
+    const id = lineIds.get(key)
+    const draft = lineDrafts.get(key)
+    const members = (id && membersByLine.get(id)) || []
+    const centerOf = (name: string) => members.find((m) => stations.get(m.id)!.name === name)?.center
+    const fromC = centerOf(fromName)
+    const toC = centerOf(toName)
+    const coords = draft && fromC && toC ? shortestPath(draft.segments, fromC, toC) : null
+    if (!id || !coords) {
+      problems.push(`${label}の ${baseLine} ${fromName}〜${toName} が見つからない`)
+      return null
+    }
+    // 経路から300m以内にある、この路線の駅を経路に沿って並べる
+    const along = new Map<string, number>()
+    for (const m of members) {
+      const pr = projectOnPolyline(m.center, coords)
+      if (pr.offset <= 0.3 && !(along.get(m.id)! <= pr.along)) along.set(m.id, pr.along)
+    }
+    const stops = [...along].sort((a, b) => a[1] - b[1]).map(([sid]) => sid)
+    return { line: id, coords, stops }
+  }
+
+  // --- 通称区間（ミニ新幹線など） ---
   const virtualNames = [...new Set(virtualRows.map((r) => `${r.company}|${r.name}`))]
   for (const vkey of virtualNames) {
     const parts = virtualRows.filter((r) => `${r.company}|${r.name}` === vkey)
@@ -330,27 +357,12 @@ async function main() {
     const via: NonNullable<Line['via']> = []
     let base: LineDraft | undefined
     for (const part of parts) {
-      const baseKey = `${part.company}|${part.base_line}`
-      const geo = geoByKey.get(baseKey)
-      base ??= lineDrafts.get(baseKey)
-      const find = (name: string) => geo?.stops.find((st) => stations.get(st.id)!.name === name)
-      const from = find(part.from)
-      const to = find(part.to)
-      if (!geo || !from || !to || from.path !== to.path) {
-        problems.push(`通称区間「${first.name}」の ${part.base_line} ${part.from}〜${part.to} が見つからない`)
-        continue
-      }
-      const [lo, hi] = from.along <= to.along ? [from, to] : [to, from]
-      const coords = slicePolyline(geo.paths[from.path], lo.along, hi.along)
-      const between = geo.stops.filter((st) => st.path === from.path && st.along >= lo.along && st.along <= hi.along)
-      // from → to の向きにそろえる
-      if (from !== lo) {
-        coords.reverse()
-        between.reverse()
-      }
-      segments.push(coords)
-      for (const st of between) if (!stopIds.includes(st.id)) stopIds.push(st.id)
-      via.push({ line: geo.id, from: part.from, to: part.to })
+      base ??= lineDrafts.get(`${part.company}|${part.base_line}`)
+      const sec = section(part.company, part.base_line, part.from, part.to, `通称区間「${first.name}」`)
+      if (!sec) continue
+      segments.push(sec.coords)
+      for (const id of sec.stops) if (!stopIds.includes(id)) stopIds.push(id)
+      via.push({ line: sec.line, from: part.from, to: part.to })
     }
     if (!base || segments.length !== parts.length) continue
     const id = uniqueId(lineId(first.company, first.name), usedLineIds)
@@ -381,6 +393,48 @@ async function main() {
         coordinates: segments.map((seg) => simplify(seg, SIMPLIFY_TOLERANCE_DEG).map((c) => roundCoord(c))),
       },
     })
+  }
+
+  // --- 直通運転の区間（山手線の環状運転など）: 路線の駅の並びと線形に、ほかの路線の区間をつなげる ---
+  const throughRows = readOverrides('line_through.csv')
+  for (const key of new Set(throughRows.map((r) => `${r.company}|${r.line}`))) {
+    const parts = throughRows.filter((r) => `${r.company}|${r.line}` === key)
+    const line = lines.find((l) => l.id === lineIds.get(key))
+    if (!line) {
+      problems.push(`直通区間の路線 ${key} が見つからない`)
+      continue
+    }
+    const segments: Coord[][] = []
+    const extra: Coord[][] = []
+    const stopIds: string[] = []
+    const through: NonNullable<Line['through']> = []
+    for (const part of parts) {
+      const sec = section(part.company, part.base_line, part.from, part.to, `「${line.displayName}」の直通区間`)
+      if (!sec) continue
+      segments.push(sec.coords)
+      for (const id of sec.stops) if (!stopIds.includes(id)) stopIds.push(id)
+      if (part.base_line !== part.line) {
+        extra.push(sec.coords)
+        through.push({ line: sec.line, from: part.from, to: part.to })
+      }
+    }
+    if (segments.length !== parts.length) continue
+    // 元の路線の駅が抜けていないか（区間の指定ミスの検出）
+    const missing = line.stations.filter((id) => !stopIds.includes(id))
+    if (missing.length) problems.push(`「${line.displayName}」の直通区間に元の駅が含まれない: ${missing.map((id) => stations.get(id)!.name).join('・')}`)
+    for (const id of stopIds) {
+      const st = stations.get(id)!
+      if (!st.lines.includes(line.id)) st.lines.push(line.id)
+    }
+    line.stations = stopIds
+    line.through = through
+    if (parts[0].from === parts[parts.length - 1].to) line.loop = true
+    line.serviceKm = Math.round(segments.reduce((sum, seg) => sum + lengthKm(seg), 0) * 10) / 10
+    const feature = (networkFeatures as { properties: { id: string }; geometry: { coordinates: Coord[][] } }[]).find(
+      (f) => f.properties.id === line.id,
+    )!
+    feature.geometry.coordinates.push(...extra.map((seg) => simplify(seg, SIMPLIFY_TOLERANCE_DEG).map((c) => roundCoord(c))))
+    line.bbox = bboxOf([...feature.geometry.coordinates.flat()]).map((v) => Math.round(v * 1e4) / 1e4) as Line['bbox']
   }
 
   // 通過する都道府県（駅の並び順で最初に現れた順）

@@ -44,7 +44,10 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
         </div>
         <div>
           <dt>地図上の延長</dt>
-          <dd>約{formatKm(line.lengthKm)}</dd>
+          <dd>
+            約{formatKm(line.serviceKm ?? line.lengthKm)}
+            {line.loop && '（一周）'}
+          </dd>
         </div>
         {line.opened && (
           <div>
@@ -94,6 +97,21 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
             )
           })}
           を走る通称区間です。
+        </p>
+      )}
+      {line.through && (
+        <p className="via">
+          {line.loop ? '環状運転です。' : ''}
+          {line.through.map((v, i) => {
+            const base = data.lines.get(v.line)
+            return (
+              <span key={i}>
+                {i > 0 && '、'}
+                {v.from}〜{v.to}は{base ? <a href={href.line(base.id)}>{base.displayName}</a> : null}
+              </span>
+            )
+          })}
+          の線路を走ります。国土数値情報での「{line.name}」はそれ以外の区間（約{formatKm(line.lengthKm)}）で、駅一覧と地図はこの区間も含めて表示しています。
         </p>
       )}
       {line.closed && (
@@ -151,6 +169,14 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
             </li>
           )
         })}
+        {line.loop && data.stations.get(line.stations[0]) && (
+          <li className="route-loop">
+            <a className="route-name" href={href.station(line.stations[0])}>
+              {data.stations.get(line.stations[0])!.name}
+            </a>
+            <span className="muted small">（一周して戻る）</span>
+          </li>
+        )}
       </ol>
 
       <WikiSummary title={line.wp} />
