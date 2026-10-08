@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mainPaths } from './chain'
-import { parseCsv } from './csv'
+import { csvRow, parseCsv } from './csv'
+import { decodeRgbPng, demValue, tilePixel } from './dem'
 import { type Coord, haversineKm, lengthKm, pointInPolygon, projectOnPolyline, simplify, slicePolyline } from './geo'
 import { fnv1a, lineId, stationId, uniqueId } from './ids'
 import {
@@ -303,5 +304,61 @@ describe('照合の追加ルール', () => {
   it('廃止日は最も新しい値を使う', () => {
     expect(latestDate(['1983-03-22T00:00:00Z/11', '2026-04-01T00:00:00Z/11'])).toBe('2026-04-01')
     expect(latestDate([])).toBe('')
+  })
+})
+
+describe('標高タイル', () => {
+  it('画素の値を地理院の仕様どおり標高にする', () => {
+    expect(demValue(0, 0x04, 0xd2)).toBeCloseTo(12.34)
+    expect(demValue(0x80, 0, 0)).toBeNull()
+    // 2^24 - 100 → -1.00m（海抜ゼロメートル地帯など）
+    expect(demValue(0xff, 0xff, 0x9c)).toBeCloseTo(-1)
+  })
+  it('経緯度をタイル番号と画素位置にする', () => {
+    // 東京駅付近、ズーム14
+    expect(tilePixel(139.7671, 35.6812, 14)).toMatchObject({
+      x: 14552,
+      y: 6451,
+    })
+    const p = tilePixel(139.7671, 35.6812, 14)
+    expect(p.px).toBeGreaterThanOrEqual(0)
+    expect(p.px).toBeLessThan(256)
+  })
+  it('8bit RGB の PNG を読める', async () => {
+    const { zlibSync } = await import('fflate')
+    // 2×2画素。1行目はフィルタなし、2行目は上の画素との差分（Up）
+    const raw = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 2, 1, 1, 1, 1, 1, 1])
+    const chunk = (type: string, body: Uint8Array) => {
+      const out = new Uint8Array(12 + body.length)
+      new DataView(out.buffer).setUint32(0, body.length)
+      out.set(
+        [...type].map((c) => c.charCodeAt(0)),
+        4,
+      )
+      out.set(body, 8)
+      return out
+    }
+    const ihdr = new Uint8Array(13)
+    new DataView(ihdr.buffer).setUint32(0, 2)
+    new DataView(ihdr.buffer).setUint32(4, 2)
+    ihdr.set([8, 2, 0, 0, 0], 8)
+    const parts = [
+      new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+      chunk('IHDR', ihdr),
+      chunk('IDAT', zlibSync(raw)),
+      chunk('IEND', new Uint8Array()),
+    ]
+    const png = new Uint8Array(parts.reduce((s, p) => s + p.length, 0))
+    let off = 0
+    for (const p of parts) {
+      png.set(p, off)
+      off += p.length
+    }
+    const { width, rgb } = decodeRgbPng(png)
+    expect(width).toBe(2)
+    expect([...rgb]).toEqual([1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7])
+  })
+  it('CSVの値をクォートする', () => {
+    expect(csvRow(['a', 'b,c', 'd"e', 1])).toBe('a,"b,c","d""e",1')
   })
 })

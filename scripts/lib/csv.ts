@@ -40,3 +40,7 @@ export function parseCsv(text: string): Record<string, string>[] {
   const header = nonEmpty[0].map((h) => h.trim())
   return nonEmpty.slice(1).map((r) => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? '').trim()])))
 }
+
+const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+/** 1行分の値をCSVの行にする */
+export const csvRow = (values: (string | number)[]) => values.map((v) => csvField(String(v))).join(',')

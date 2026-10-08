@@ -12,7 +12,8 @@
     "test": "vitest run",
     "data:build": "tsx scripts/build-data.ts",
     "data:wikidata": "tsx scripts/sync-wikidata.ts",
-    "data:boundaries": "tsx scripts/build-boundaries.ts"
+    "data:boundaries": "tsx scripts/build-boundaries.ts",
+    "data:elevation": "tsx scripts/sync-elevation.ts"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",

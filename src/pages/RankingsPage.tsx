@@ -49,6 +49,8 @@ export function RankingsPage({ data }: { data: RailData }) {
       oldestLines: rank(lines, (l) => dateKey(l.opened), 10, 'asc'),
       oldestStations: rank(stations, (s) => dateKey(s.opened), 10, 'asc'),
       newestStations: rank(stations, (s) => dateKey(s.opened), 10),
+      highest: rank(stations, (s) => s.elevation, 10),
+      lowest: rank(stations, (s) => s.elevation, 10, 'asc'),
       north: rank(stations, (s) => s.lat, 1),
       south: rank(stations, (s) => s.lat, 1, 'asc'),
       east: rank(stations, (s) => s.lon, 1),
@@ -99,6 +101,16 @@ export function RankingsPage({ data }: { data: RailData }) {
       </Section>
       <Section title="新しい駅" note="Wikidataの開業日。">
         <StationList data={data} stations={r.newestStations} ordered value={(s) => formatDate(s.opened)} />
+      </Section>
+
+      <Section title="標高の高い駅" note="駅の代表点の地表の標高（国土地理院の標高タイル）。ケーブルカーの山上駅などを含みます。">
+        <StationList data={data} stations={r.highest} ordered value={(s) => `${formatNumber(s.elevation!)}m`} />
+      </Section>
+      <Section
+        title="標高の低い駅"
+        note="同上。地下駅でも地表の標高で比べています。海抜ゼロメートル地帯などでは0m未満になります。"
+      >
+        <StationList data={data} stations={r.lowest} ordered value={(s) => `${formatNumber(s.elevation!)}m`} />
       </Section>
 
       <Section title="東西南北の端の駅" note="駅の代表点の緯度経度で比較。">

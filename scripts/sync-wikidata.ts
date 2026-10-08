@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Line, Station } from '../src/types'
-import { parseCsv } from './lib/csv'
+import { csvRow, parseCsv } from './lib/csv'
 import { type Coord, haversineKm } from './lib/geo'
 import {
   type WdLine,
@@ -223,8 +223,6 @@ function singleRanked(joined: string): string {
   return all.length === 1 ? all[0] : ''
 }
 
-const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-const csvRow = (values: (string | number)[]) => values.map((v) => csvField(String(v))).join(',')
 
 async function syncLines(lines: Line[], today: string) {
   const items: WdLine[] = (await sparql(LINES_QUERY)).map((b) => ({

@@ -210,6 +210,13 @@ async function main() {
     if (r.wp) detailOf(st.id).wp = r.wp
     if (r.image) detailOf(st.id).image = r.image
   }
+  // 標高（地理院タイル）。座標が変わった駅は、npm run data:elevation で取り直すまで出さない
+  const elevationRows = readOverrides('gsi_elevations.csv')
+  for (const r of elevationRows) {
+    const st = stations.get(r.station_id)
+    if (!st || !r.elevation_m || r.coord !== `${st.lon.toFixed(5)},${st.lat.toFixed(5)}`) continue
+    st.elevation = Math.round(Number(r.elevation_m))
+  }
 
   // --- 乗降客数 ---
   const rowsByStation = new Map<string, { company: string; line: string; years: S12Year[] }[]>()
@@ -418,6 +425,22 @@ async function main() {
     retrievedAt: admin.source.retrievedAt,
     credit: `「${admin.source.title}」（国土交通省）（${admin.source.url}）（${admin.source.retrievedAt}取得）を加工して作成`,
   })
+  if (elevationRows.length) {
+    const retrievedAt =
+      elevationRows
+        .map((r) => /(\d{4}-\d{2}-\d{2})/.exec(r.source)?.[1] ?? '')
+        .sort()
+        .pop() ?? ''
+    sources.push({
+      id: 'gsi-dem',
+      title: '地理院タイル（標高タイル）',
+      url: 'https://maps.gsi.go.jp/development/demtile.html',
+      license: '国土地理院コンテンツ利用規約（CC BY 4.0 互換）',
+      edition: '基盤地図情報 数値標高モデル（DEM5A、無い地点は DEM10B）',
+      retrievedAt,
+      credit: `国土地理院「地理院タイル（標高タイル）」（${retrievedAt}取得）を加工して作成`,
+    })
+  }
   if (wikidataRows.length) {
     const retrievedAt =
       wikidataRows
@@ -485,7 +508,7 @@ async function main() {
   console.log(
     `lines=${lines.length} stations=${stationList.length} companies=${companies.size} ` +
       `passengers=${withPassengers} (FY${latestYear}) s12_unmatched=${unmatched} ` +
-      `pref=${withPref} (fallback ${outside}) kana=${stationList.filter((s) => s.kana).length} vehicles=${vehicles.length}`,
+      `pref=${withPref} (fallback ${outside}) kana=${stationList.filter((s) => s.kana).length} elevation=${stationList.filter((s) => s.elevation != null).length} vehicles=${vehicles.length}`,
   )
 }
 

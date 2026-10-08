@@ -10,6 +10,7 @@
 | `wikidata_stations.csv` | 同上（駅の読み仮名・ローマ字・開業日・記事名・画像）。駅IDは `public/data/stations.json` の ID | station_id, name, qid, kana, romaji, opened, wp, image, distance_m, source |
 | `wikidata_companies.csv` | 同上（事業者の項目・記事名・画像・設立・本社・公式サイト） | company, qid, label, wp, image, inception, headquarters, website, source |
 | `wikidata_vehicles.csv` | 同上（図鑑に載せる車両形式） | qid, name, kind, companies, operators, manufacturers, entry, retired, max_speed_kmh, wp, image, sitelinks, source |
+| `gsi_elevations.csv` | 駅の代表点の標高（地理院タイルの標高タイル）。**手で編集しない**。`npm run data:elevation` が、表に無い駅と座標が変わった駅だけ取得する。座標（coord）が今の駅と違う行は使われない | station_id, name, coord, elevation_m, dem, source |
 | `wikidata_line_links.csv` | 自動照合できなかった路線を、人が確認して Wikidata 項目に結ぶ表（照合より優先） | company, line, qid, source |
 | `line_colors.csv` | 路線カラー（Wikidataの値を上書きしたいとき） | company, line, color, source |
 | `line_aliases.csv` | 表示名（Wikidataの値を上書きしたいとき） | company, line, display_name, source |

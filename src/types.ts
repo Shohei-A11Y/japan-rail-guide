@@ -88,6 +88,8 @@ export interface Station {
   /** 開業日（Wikidata） */
   opened?: string
   wikidata?: string
+  /** 代表点の地表の標高（m、地理院タイル）。高架・地下のホームの高さではない */
+  elevation?: number
   /** 最新年度の1日あたり乗降客数（駅としての合計）。非公開・データなしは null */
   passengers: number | null
 }

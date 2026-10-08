@@ -737,3 +737,66 @@ details.city summary {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* 標高の変化（路線ページ） */
+.profile {
+  margin: 8px 0 16px;
+}
+.profile-summary {
+  margin: 0 0 4px;
+}
+.profile-plot {
+  margin-bottom: 4px;
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  touch-action: pan-y;
+}
+.profile-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.profile-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.profile-axis {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.profile-label {
+  fill: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 3px;
+}
+.profile-dot {
+  stroke: var(--card);
+  stroke-width: 2;
+}
+.profile-cross {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.profile-tip {
+  position: absolute;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.profile-tip span {
+  color: var(--muted);
+}

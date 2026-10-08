@@ -43,6 +43,12 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
             </dd>
           </div>
         )}
+        {st.elevation != null && (
+          <div>
+            <dt>標高</dt>
+            <dd>約{formatNumber(st.elevation)}m</dd>
+          </div>
+        )}
         {st.opened && (
           <div>
             <dt>開業</dt>
@@ -119,6 +125,7 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
       <RailMap data={data} focus={{ type: 'station', id: st.id }} className="rail-map mini" />
       <p className="muted small">
         北緯 {st.lat.toFixed(4)}° 東経 {st.lon.toFixed(4)}°（同名で300m以内の駅をまとめた代表点）
+        {st.elevation != null && '。標高は代表点の地表の値（国土地理院の標高タイル）で、高架・地下のホームの高さではありません'}
       </p>
       {st.wikidata && (
         <p className="muted small">

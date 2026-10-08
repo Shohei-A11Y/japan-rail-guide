@@ -1,4 +1,5 @@
 import { PageActions } from '../components/actions'
+import { ElevationProfile } from '../components/ElevationProfile'
 import { CommonsPhoto, Intro, WikiSummary } from '../components/media'
 import { LineBadge, Notice, Page } from '../components/parts'
 import { describeLine } from '../describe'
@@ -119,6 +120,8 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
       <RailMap data={data} focus={{ type: 'line', id: line.id }} className="rail-map mini" />
 
       <CommonsPhoto file={line.image} alt={line.displayName} />
+
+      <ElevationProfile key={line.id} data={data} line={line} />
 
       <h2>{line.via ? '区間内の駅' : '駅一覧'}</h2>
       <p className="muted small">

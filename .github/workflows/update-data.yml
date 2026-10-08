@@ -21,6 +21,9 @@ jobs:
       - run: npm ci
       # 検証に失敗するとここで止まり、前回のデータがそのまま残る
       - run: npm run data:build -- --refresh
+      # 新しい駅・位置が変わった駅の標高を取得し、反映するため作り直す（それ以外の駅は表の値を再利用）
+      - run: npm run data:elevation
+      - run: npm run data:build
       - run: npm test
       - name: Commit if changed
         run: |
@@ -31,6 +34,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data
+          git add public/data data/overrides/gsi_elevations.csv
           git commit -m "データを更新（国土数値情報）"
           git push
