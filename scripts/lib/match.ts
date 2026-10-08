@@ -10,12 +10,17 @@ export interface WdLine {
 export interface LineMatch {
   qid: string
   label: string
-  /** label = 項目名と一致, alias = 別名と一致, suffix = 項目名の末尾と一致 */
-  how: 'label' | 'alias' | 'suffix'
+  /** label = 項目名と一致, alias = 別名と一致, suffix = 項目名の末尾と一致, manual = 人が確認した対応表 */
+  how: 'label' | 'alias' | 'suffix' | 'manual'
 }
 
+/** 社名の表記ゆれ（全角・半角、空白）をそろえる。例: 国土数値情報の「WILLER（全角スペース）TRAINS」と Wikidata の「WILLER TRAINS」 */
+const normalizeName = (name: string) => name.normalize('NFKC').replace(/\s+/g, '')
+
 /** 国土数値情報の運営会社名と Wikidata の運営者名が同じ会社を指すか */
-export function sameOperator(company: string, operator: string): boolean {
+export function sameOperator(rawCompany: string, rawOperator: string): boolean {
+  const company = normalizeName(rawCompany)
+  const operator = normalizeName(rawOperator)
   if (!company || !operator) return false
   // 例: 国土数値情報「東京都」と Wikidata「東京都交通局」
   return company === operator || operator.startsWith(company) || company.startsWith(operator)
@@ -88,6 +93,15 @@ export function earliestDate(values: string[]): string {
   return dates[0]?.text ?? ''
 }
 
+/** earliestDate と同じ形式の値の中で最も新しいもの */
+export function latestDate(values: string[]): string {
+  const sorted = values
+    .filter((v) => /^\d{4}-\d{2}-\d{2}/.test(v))
+    .sort()
+    .reverse()
+  return sorted.length ? earliestDate([sorted[0]]) : ''
+}
+
 /** 「直流1500V鉄道電化」→「直流1500V」 */
 export const shortElectrification = (label: string) => label.replace(/(による)?鉄道電化$/, '')
 
@@ -106,7 +120,9 @@ export function romajiFromEnglish(label: string): string {
  * 「JR東」のような短い別名が「JR東海交通事業」に前方一致しないよう、
  * 完全一致か「Wikidata 側の名前が事業者名で始まる」（例: 東京都 → 東京都交通局）だけを認める。
  */
-export function isOperatorOf(company: string, operator: string): boolean {
+export function isOperatorOf(rawCompany: string, rawOperator: string): boolean {
+  const company = normalizeName(rawCompany)
+  const operator = normalizeName(rawOperator)
   return company === operator || (operator.length > company.length && operator.startsWith(company))
 }
 

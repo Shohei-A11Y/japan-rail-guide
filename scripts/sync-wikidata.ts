@@ -12,11 +12,13 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Line, Station } from '../src/types'
+import { parseCsv } from './lib/csv'
 import { type Coord, haversineKm } from './lib/geo'
 import {
   type WdLine,
   commonsFileName,
   earliestDate,
+  latestDate,
   matchLine,
   romajiFromEnglish,
   isOperatorOf,
@@ -66,8 +68,10 @@ SELECT ?l
   (GROUP_CONCAT(DISTINCT STR(?gauge); separator="|") AS ?gauges)
   (GROUP_CONCAT(DISTINCT ?elec; separator="|") AS ?elecs)
   (SAMPLE(?wpTitle) AS ?wp) (SAMPLE(?img) AS ?image)
+  (GROUP_CONCAT(DISTINCT CONCAT(STR(?closed), "/", STR(?cprec)); separator="|") AS ?closes)
 WHERE {
   VALUES ?l { ${qids.map((q) => `wd:${q}`).join(' ')} }
+  OPTIONAL { ?l p:P576/psv:P576 [ wikibase:timeValue ?closed ; wikibase:timePrecision ?cprec ] }
   OPTIONAL { ?wpPage schema:about ?l ; schema:isPartOf <https://ja.wikipedia.org/> ; schema:name ?wpTitle }
   OPTIONAL { ?l wdt:P18 ?img }
   OPTIONAL { ?l p:P1619/psv:P1619 [ wikibase:timeValue ?open ; wikibase:timePrecision ?prec ] }
@@ -101,6 +105,15 @@ SELECT ?x (SAMPLE(?wpTitle) AS ?wp) (SAMPLE(?img) AS ?image) WHERE {
 }
 GROUP BY ?x`
 
+// 人が対応を確認した路線の項目（廃止・種類の違いなどで LINES_QUERY に含まれないものもある）
+const linkedItemsQuery = (qids: string[]) => `
+SELECT ?l ?label (GROUP_CONCAT(DISTINCT ?color; separator="|") AS ?colors) WHERE {
+  VALUES ?l { ${qids.map((q) => `wd:${q}`).join(' ')} }
+  ?l rdfs:label ?label . FILTER(LANG(?label) = "ja")
+  OPTIONAL { ?l wdt:P465 ?color }
+}
+GROUP BY ?l ?label`
+
 // 照合できた路線の運営者（事業者の Wikidata 項目を見つけるため）
 const lineOperatorsQuery = (qids: string[]) => `
 SELECT ?l ?op (GROUP_CONCAT(DISTINCT ?name; separator="|") AS ?names) WHERE {
@@ -114,7 +127,7 @@ GROUP BY ?l ?op`
 const companyDetailsQuery = (qids: string[]) => `
 SELECT ?c (SAMPLE(?label) AS ?name) (SAMPLE(?wpTitle) AS ?wp) (SAMPLE(?img) AS ?image)
   (GROUP_CONCAT(DISTINCT CONCAT(STR(?inc), "/", STR(?prec)); separator="|") AS ?inceptions)
-  (SAMPLE(?hqLabel) AS ?hq)
+  (GROUP_CONCAT(DISTINCT CONCAT(STR(?hqRank), " ", ?hqLabel); separator=" ;; ") AS ?hqs)
   (GROUP_CONCAT(DISTINCT CONCAT(STR(?siteRank), " ", STR(?site)); separator=" ;; ") AS ?websites)
 WHERE {
   VALUES ?c { ${qids.map((q) => `wd:${q}`).join(' ')} }
@@ -122,7 +135,10 @@ WHERE {
   OPTIONAL { ?wpPage schema:about ?c ; schema:isPartOf <https://ja.wikipedia.org/> ; schema:name ?wpTitle }
   OPTIONAL { ?c wdt:P18 ?img }
   OPTIONAL { ?c p:P571/psv:P571 [ wikibase:timeValue ?inc ; wikibase:timePrecision ?prec ] }
-  OPTIONAL { ?c wdt:P159 ?hqItem . ?hqItem rdfs:label ?hqLabel . FILTER(LANG(?hqLabel) = "ja") }
+  OPTIONAL {
+    ?c p:P159 ?hqStatement . ?hqStatement ps:P159 ?hqItem ; wikibase:rank ?hqRank . FILTER(?hqRank != wikibase:DeprecatedRank)
+    ?hqItem rdfs:label ?hqLabel . FILTER(LANG(?hqLabel) = "ja")
+  }
   OPTIONAL { ?c p:P856 ?siteStatement . ?siteStatement ps:P856 ?site ; wikibase:rank ?siteRank . FILTER(?siteRank != wikibase:DeprecatedRank) }
 }
 GROUP BY ?c`
@@ -189,8 +205,24 @@ async function sparql(query: string, attempt = 1): Promise<Binding[]> {
   return ((await res.json()) as { results: { bindings: Binding[] } }).results.bindings
 }
 
-const split = (v?: { value: string }) => (v?.value ? v.value.split('|').filter(Boolean) : [])
+// GROUP_CONCAT の並びは実行ごとに変わるので、並べ替えて差分が出ないようにする
+const split = (v?: { value: string }) => (v?.value ? v.value.split('|').filter(Boolean).sort() : [])
 const qidOf = (uri: string) => uri.replace(/^.*\//, '')
+/** 「ランク 値」を ;; で連ねた値から、優先ランクの値、なければ1つしかない値を返す。決まらなければ空 */
+function singleRanked(joined: string): string {
+  const values = joined
+    .split(' ;; ')
+    .filter(Boolean)
+    .map((line) => {
+      const i = line.indexOf(' ')
+      return { preferred: line.slice(0, i).endsWith('PreferredRank'), value: line.slice(i + 1) }
+    })
+  const preferred = [...new Set(values.filter((v) => v.preferred).map((v) => v.value))]
+  if (preferred.length === 1) return preferred[0]
+  const all = [...new Set(values.map((v) => v.value))]
+  return all.length === 1 ? all[0] : ''
+}
+
 const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
 const csvRow = (values: (string | number)[]) => values.map((v) => csvField(String(v))).join(',')
 
@@ -203,15 +235,36 @@ async function syncLines(lines: Line[], today: string) {
     colors: split(b.colors),
   }))
   const byQid = new Map(items.map((it) => [it.qid, it]))
+  // 人が確認した対応表（data/overrides/wikidata_line_links.csv）を優先する
+  const links = new Map(
+    parseCsv(readFileSync(join(OVERRIDES, 'wikidata_line_links.csv'), 'utf8')).map((r) => [`${r.company}|${r.line}`, r.qid]),
+  )
+  const linkedQids = [...new Set(links.values())]
+  if (linkedQids.length) {
+    for (const b of await sparql(linkedItemsQuery(linkedQids))) {
+      const qid = qidOf(b.l!.value)
+      byQid.set(qid, { qid, label: b.label!.value, aliases: [], operators: [], colors: split(b.colors) })
+    }
+  }
   // 通称区間（ミニ新幹線など）は元データに無い路線なので照合しない
   const targets = lines.filter((l) => !l.via)
-  const matches = targets.map((l) => ({ line: l, match: matchLine(l.company, l.name, items) }))
+  const matches = targets.map((l) => {
+    const linked = links.get(`${l.company}|${l.name}`)
+    const item = linked ? byQid.get(linked) : undefined
+    if (linked && !item) throw new Error(`対応表の ${linked}（${l.company} ${l.name}）が Wikidata に見つからない`)
+    return {
+      line: l,
+      match: item ? { qid: item.qid, label: item.label, how: 'manual' as const } : matchLine(l.company, l.name, items),
+    }
+  })
   const qids = [...new Set(matches.flatMap((m) => (m.match ? [m.match.qid] : [])))]
-  const details = new Map<string, { opened: string; gauges: string[]; elecs: string[]; wp: string; image: string }>()
+  type Details = { opened: string; closed: string; gauges: string[]; elecs: string[]; wp: string; image: string }
+  const details = new Map<string, Details>()
   for (let i = 0; i < qids.length; i += 200) {
     for (const b of await sparql(lineDetailsQuery(qids.slice(i, i + 200)))) {
       details.set(qidOf(b.l!.value), {
         opened: earliestDate(split(b.opens)),
+        closed: latestDate(split(b.closes)),
         gauges: [...new Set(split(b.gauges).map((g) => String(Math.round(Number(g)))))],
         elecs: [...new Set(split(b.elecs).map(shortElectrification))],
         wp: b.wp?.value ?? '',
@@ -221,10 +274,24 @@ async function syncLines(lines: Line[], today: string) {
   }
 
   const rows = [
-    csvRow(['company', 'line', 'qid', 'label', 'color', 'opened', 'gauge_mm', 'electrification', 'wp', 'image', 'match', 'source']),
+    csvRow([
+      'company',
+      'line',
+      'qid',
+      'label',
+      'color',
+      'opened',
+      'closed',
+      'gauge_mm',
+      'electrification',
+      'wp',
+      'image',
+      'match',
+      'source',
+    ]),
   ]
   const unmatched: string[] = []
-  const counts = { label: 0, alias: 0, suffix: 0, color: 0, opened: 0, gauge: 0, elec: 0 }
+  const counts = { label: 0, alias: 0, suffix: 0, manual: 0, color: 0, opened: 0, gauge: 0, elec: 0 }
   for (const { line: l, match: m } of matches.sort((a, b) =>
     `${a.line.company}|${a.line.name}`.localeCompare(`${b.line.company}|${b.line.name}`, 'ja'),
   )) {
@@ -234,7 +301,7 @@ async function syncLines(lines: Line[], today: string) {
     }
     counts[m.how]++
     const color = singleColor(byQid.get(m.qid)!.colors) ?? ''
-    const d = details.get(m.qid) ?? { opened: '', gauges: [], elecs: [], wp: '', image: '' }
+    const d = details.get(m.qid) ?? { opened: '', closed: '', gauges: [], elecs: [], wp: '', image: '' }
     if (color) counts.color++
     if (d.opened) counts.opened++
     if (d.gauges.length) counts.gauge++
@@ -247,6 +314,7 @@ async function syncLines(lines: Line[], today: string) {
         m.label,
         color,
         d.opened,
+        d.closed,
         d.gauges.join('|'),
         d.elecs.join('|'),
         d.wp,
@@ -259,7 +327,7 @@ async function syncLines(lines: Line[], today: string) {
   writeFileSync(join(OVERRIDES, 'wikidata_lines.csv'), rows.join('\n') + '\n')
   console.log(
     `lines: items=${items.length} matched=${rows.length - 1}/${targets.length} ` +
-      `(label=${counts.label} alias=${counts.alias} suffix=${counts.suffix}) ` +
+      `(label=${counts.label} alias=${counts.alias} suffix=${counts.suffix} manual=${counts.manual}) ` +
       `color=${counts.color} opened=${counts.opened} gauge=${counts.gauge} electrification=${counts.elec}`,
   )
   console.log(`lines unmatched (${unmatched.length}): ${unmatched.join(' / ')}`)
@@ -389,7 +457,7 @@ async function syncCompanies(matched: { company: string; qid: string }[], today:
         b?.wp?.value ?? '',
         commonsFileName(b?.image?.value ?? ''),
         earliestDate(split(b?.inceptions)),
-        b?.hq?.value ?? '',
+        singleRanked(b?.hqs?.value ?? ''),
         pickWebsite(
           (b?.websites?.value ?? '')
             .split(' ;; ')

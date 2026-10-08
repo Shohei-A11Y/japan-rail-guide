@@ -15,6 +15,7 @@ export function describeLine(line: Line, data: RailData): string {
   const last = data.stations.get(line.stations[line.stations.length - 1])
   if (first && last && first !== last) parts.push(`${first.name}〜${last.name}の${line.stations.length}駅。`)
   if (line.opened) parts.push(`${formatDate(line.opened)}開業。`)
+  if (line.closed) parts.push(`${formatDate(line.closed)}廃止。`)
   return parts.join('')
 }
 

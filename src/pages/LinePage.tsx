@@ -51,6 +51,12 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
             <dd>{formatDate(line.opened)}</dd>
           </div>
         )}
+        {line.closed && (
+          <div>
+            <dt>廃止</dt>
+            <dd>{formatDate(line.closed)}</dd>
+          </div>
+        )}
         {line.gaugeMm && (
           <div>
             <dt>軌間</dt>
@@ -88,6 +94,11 @@ export function LinePage({ data, id }: { data: RailData; id: string }) {
           })}
           を走る通称区間です。
         </p>
+      )}
+      {line.closed && (
+        <Notice>
+          Wikidataによると、この路線は{formatDate(line.closed)}に廃止されています。国土数値情報のデータ（{data.meta.sources.find((s) => s.id === 'ksj-n02')?.edition}）より後の出来事のため、地図と一覧にはまだ載っています。
+        </Notice>
       )}
       <Notice>
         延長は地図上の線形から計算した値で、営業キロとは異なります。

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T16:30:19.635Z",
+  "generatedAt": "2026-10-08T00:13:41.977Z",
   "passengerYear": 2024,
   "sources": [
     {
@@ -35,8 +35,8 @@
       "url": "https://www.wikidata.org/",
       "license": "CC0 1.0",
       "edition": "路線の表示名・路線色・開業日・軌間・電化方式、駅の読み仮名・開業日、事業者、車両形式、Wikipedia記事名・Commons画像名",
-      "retrievedAt": "2026-10-07",
-      "credit": "Wikidata（2026-10-07取得）の情報を使用"
+      "retrievedAt": "2026-10-08",
+      "credit": "Wikidata（2026-10-08取得）の情報を使用"
     }
   ],
   "counts": {

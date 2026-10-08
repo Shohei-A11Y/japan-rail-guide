@@ -6,10 +6,12 @@ import { fnv1a, lineId, stationId, uniqueId } from './ids'
 import {
   earliestDate,
   isOperatorOf,
+  latestDate,
   matchLine,
   nameVariants,
   pickWebsite,
   romajiFromEnglish,
+  sameOperator,
   shortElectrification,
   singleColor,
 } from './match'
@@ -289,5 +291,17 @@ describe('Service Worker の保存ファイル一覧', () => {
     expect(a.version).toBe(b.version)
     expect(a.version).not.toBe(c.version)
     expect(a.urls).toEqual(['./', './assets/a.js', './data/meta.json'])
+  })
+})
+
+describe('照合の追加ルール', () => {
+  it('社名の全角・半角や空白の違いを同じとみなす', () => {
+    expect(sameOperator('WILLER　TRAINS', 'WILLER TRAINS')).toBe(true)
+    expect(isOperatorOf('WILLER　TRAINS', 'WILLER TRAINS')).toBe(true)
+  })
+
+  it('廃止日は最も新しい値を使う', () => {
+    expect(latestDate(['1983-03-22T00:00:00Z/11', '2026-04-01T00:00:00Z/11'])).toBe('2026-04-01')
+    expect(latestDate([])).toBe('')
   })
 })

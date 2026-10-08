@@ -34,7 +34,7 @@ const OUT = join(ROOT, 'public/data')
 const ADMIN_AREAS = join(ROOT, 'data/static/admin_areas.json')
 
 // 国土数値情報の版。新しい版が出たらここを更新する（zipの番号と「○年度版」の年はデータによってずれる）
-const N02 = { edition: '25', label: '2025年度版（2025年12月31日時点）', page: 'KsjTmplt-N02-2025.html' }
+const N02 = { edition: '25', label: '2025年度版（2025年12月31日時点）', asOf: '2025-12-31', page: 'KsjTmplt-N02-2025.html' }
 const S12 = { edition: '25', label: '2024年度版', page: 'KsjTmplt-S12-2024.html' }
 const HISTORY_YEARS = 5
 const SIMPLIFY_TOLERANCE_DEG = 0.0001 // 約10m
@@ -292,6 +292,8 @@ async function main() {
       colorSource,
       ...(wd?.qid ? { wikidata: wd.qid } : {}),
       ...(wd?.opened ? { opened: wd.opened } : {}),
+      // データの時点より後に廃止された路線だけ廃止日を持たせる（それ以前の日付は一部区間の廃止など）
+      ...(wd?.closed && wd.closed > N02.asOf ? { closed: wd.closed } : {}),
       ...(wd?.gauge_mm ? { gaugeMm: wd.gauge_mm.split('|').map(Number) } : {}),
       ...(wd?.electrification ? { electrification: wd.electrification.split('|') } : {}),
       ...(wd?.wp ? { wp: wd.wp } : {}),

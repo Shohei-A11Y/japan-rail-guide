@@ -46,6 +46,8 @@ export interface Line {
   via?: { line: string; from: string; to: string }[]
   /** 開業日（Wikidata。精度に応じて YYYY / YYYY-MM / YYYY-MM-DD） */
   opened?: string
+  /** 国土数値情報の時点より後に廃止された路線の廃止日（Wikidata） */
+  closed?: string
   /** 軌間（mm、Wikidata） */
   gaugeMm?: number[]
   /** 電化方式（Wikidata。例: 直流1500V, 非電化） */
