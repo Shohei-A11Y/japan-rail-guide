@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { type RouteEdges, type RouteGraph, buildGraph } from './route'
 import type { Company, Line, Meta, Station, StationDetail, Vehicle } from './types'
 
 export interface RailData {
@@ -49,6 +50,9 @@ const loadData = once(() =>
 // 乗降客数の内訳・推移などは駅ページでしか使わないので、最初の読み込みから外して後から読む
 const loadDetails = once(() => getJson<Record<string, StationDetail>>('station-details.json'))
 
+// 乗換検索の駅のつながりは乗換ページでだけ使う
+const loadRoutes = once(() => getJson<RouteEdges>('routes.json').then(buildGraph))
+
 export type Loadable<T> = { status: 'loading' } | { status: 'error'; error: string } | { status: 'ready'; data: T }
 export type DataState = Loadable<RailData>
 
@@ -74,3 +78,6 @@ export function useStationDetail(id: string): StationDetail | null | undefined {
   const state = useLoad(loadDetails)
   return state.status === 'ready' ? (state.data[id] ?? null) : undefined
 }
+
+/** 乗換検索のグラフ（routes.json から作る） */
+export const useRouteGraph = (): Loadable<RouteGraph> => useLoad(loadRoutes)

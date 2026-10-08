@@ -1,8 +1,18 @@
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { type FavoriteKind, useFavorites } from '../favorites'
 
-/** ページ上部のお気に入り・共有ボタン */
-export function PageActions({ kind, id, title }: { kind: FavoriteKind; id: string; title: string }) {
+/** ページ上部のお気に入り・共有ボタン（children はその後ろに並べるボタン） */
+export function PageActions({
+  kind,
+  id,
+  title,
+  children,
+}: {
+  kind: FavoriteKind
+  id: string
+  title: string
+  children?: ReactNode
+}) {
   const { has, toggle } = useFavorites()
   const [message, setMessage] = useState('')
   const saved = has(kind, id)
@@ -33,6 +43,7 @@ export function PageActions({ kind, id, title }: { kind: FavoriteKind; id: strin
       <button className="action" onClick={share}>
         共有
       </button>
+      {children}
       {message && (
         <span className="action-message" role="status">
           {message}

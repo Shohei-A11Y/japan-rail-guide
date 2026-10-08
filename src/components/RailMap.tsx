@@ -6,6 +6,13 @@ import type { BBox } from '../types'
 
 export type MapSelection = { type: 'line'; id: string } | { type: 'station'; id: string }
 
+/** 地図に重ねる経路（区間ごとの色と、駅を順に結んだ座標） */
+export interface MapRoute {
+  legs: { color: string; coords: [number, number][] }[]
+  /** 経路上の駅（この駅だけを表示する） */
+  stations: string[]
+}
+
 interface Props {
   data: RailData
   /** 強調して表示する路線・駅。指定すると、その範囲に地図を合わせる */
@@ -15,6 +22,8 @@ interface Props {
   bounds?: BBox
   /** 地図を動かし終えたときの表示範囲とズーム */
   onViewChange?: (bounds: BBox, zoom: number) => void
+  /** 重ねて表示する経路。指定すると、その範囲に地図を合わせる */
+  route?: MapRoute
   className?: string
 }
 
@@ -39,7 +48,7 @@ const lineWidth = (extra = 0): ExpressionSpecification => {
   return ['interpolate', ['linear'], ['zoom'], 4, w(2, 1), 10, w(4, 2.5), 15, w(8, 6)]
 }
 
-export function RailMap({ data, focus, onSelect, bounds, onViewChange, className }: Props) {
+export function RailMap({ data, focus, onSelect, bounds, onViewChange, route, className }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const onSelectRef = useRef(onSelect)
@@ -87,6 +96,7 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, className
             attribution: '「国土数値情報（鉄道・駅別乗降客数）」（国土交通省）を加工して作成',
           },
           stations: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+          route: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
         },
         layers: [
           {
@@ -114,6 +124,20 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, className
             source: 'network',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: { 'line-color': ['get', 'c'], 'line-width': lineWidth() },
+          },
+          {
+            id: 'route-casing',
+            type: 'line',
+            source: 'route',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': dark ? '#0d1117' : '#ffffff', 'line-width': 9 },
+          },
+          {
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': ['get', 'c'], 'line-width': 5 },
           },
           ...STATION_LAYERS.map(([id, minzoom, filter]) => stationLayer(id, minzoom, filter, dark)),
           {
@@ -200,19 +224,35 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, className
     const apply = () => {
       const lineId = focus?.type === 'line' ? focus.id : ''
       const stationId = focus?.type === 'station' ? focus.id : ''
-      map.setPaintProperty(
-        'lines',
-        'line-opacity',
-        lineId ? ['case', ['==', ['get', 'id'], lineId], 1, 0.25] : 1,
-      )
+      const dim = lineId || route
+      map.setPaintProperty('lines', 'line-opacity', dim ? ['case', ['==', ['get', 'id'], lineId], 1, 0.25] : 1)
       map.setFilter('station-focus', ['==', ['get', 'id'], stationId])
-      // 路線を強調するときは、その路線の駅だけを表示して線が駅に埋もれないようにする
+      ;(map.getSource('route') as GeoJSONSource | undefined)?.setData({
+        type: 'FeatureCollection',
+        features: (route?.legs ?? []).map((leg) => ({
+          type: 'Feature',
+          properties: { c: leg.color },
+          geometry: { type: 'LineString', coordinates: leg.coords },
+        })),
+      })
+      // 路線・経路を強調するときは、その駅だけを表示して線が駅に埋もれないようにする
       const line = lineId ? data.lines.get(lineId) : undefined
+      const shown = line?.stations ?? route?.stations
       for (const [id, , filter] of STATION_LAYERS) {
-        map.setFilter(id, line ? ['all', filter, ['in', ['get', 'id'], ['literal', line.stations]]] : filter)
+        map.setFilter(id, shown ? ['all', filter, ['in', ['get', 'id'], ['literal', shown]]] : filter)
       }
+      const routeCoords = route?.legs.flatMap((l) => l.coords) ?? []
       if (line) {
         map.fitBounds(line.bbox, { padding: 40, duration: 0, maxZoom: 14 })
+      } else if (routeCoords.length) {
+        const lons = routeCoords.map((c) => c[0])
+        const lats = routeCoords.map((c) => c[1])
+        map.fitBounds([Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)], {
+          // 下端は出典表示に隠れないよう広めに空ける
+          padding: { top: 40, right: 40, bottom: 70, left: 40 },
+          duration: 0,
+          maxZoom: 14,
+        })
       } else if (stationId) {
         const st = data.stations.get(stationId)
         if (st) map.jumpTo({ center: [st.lon, st.lat], zoom: 13 })
@@ -224,7 +264,7 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, className
     else map.once('load', apply)
     // bounds は配列なので、値で比較できるよう文字列にして依存に入れる
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus?.type, focus?.id, data, bounds?.join(',')])
+  }, [focus?.type, focus?.id, data, bounds?.join(','), route])
 
   return <div ref={container} className={className ?? 'rail-map'} />
 }

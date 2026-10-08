@@ -14,6 +14,7 @@ export type Route =
   | { page: 'vehicles' }
   | { page: 'vehicle'; id: string }
   | { page: 'favorites' }
+  | { page: 'route'; from: string; to: string }
   | { page: 'about' }
   | { page: 'notfound' }
 
@@ -29,6 +30,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'company' && parts[1]) return { page: 'company', name: parts[1] }
   if (parts[0] === 'vehicles' && parts.length === 1) return { page: 'vehicles' }
   if (parts[0] === 'favorites' && parts.length === 1) return { page: 'favorites' }
+  if (parts[0] === 'route' && parts.length === 1) return { page: 'route', from: params.get('from') ?? '', to: params.get('to') ?? '' }
   if (parts[0] === 'vehicle' && parts[1]) return { page: 'vehicle', id: parts[1] }
   if (parts[0] === 'line' && parts[1]) return { page: 'line', id: parts[1] }
   if (parts[0] === 'station' && parts[1]) return { page: 'station', id: parts[1] }
@@ -49,6 +51,13 @@ export const href = {
   company: (name: string) => `#/company/${encodeURIComponent(name)}`,
   vehicles: () => '#/vehicles',
   favorites: () => '#/favorites',
+  route: (from = '', to = '') => {
+    const q = new URLSearchParams()
+    if (from) q.set('from', from)
+    if (to) q.set('to', to)
+    const qs = q.toString()
+    return qs ? `#/route?${qs}` : '#/route'
+  },
   vehicle: (id: string) => `#/vehicle/${encodeURIComponent(id)}`,
   about: () => '#/about',
 }

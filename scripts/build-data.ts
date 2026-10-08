@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { unzipSync } from 'fflate'
 import { COMPANY_TYPE_LABELS, DEFAULT_LINE_COLORS } from '../src/codes'
 import type { Company, CompanyType, Line, Meta, Source, Station, StationDetail, Vehicle } from '../src/types'
-import { mainPaths, shortestPath } from './lib/chain'
+import { mainPaths, shortestPath, stationAdjacency } from './lib/chain'
 import { parseCsv } from './lib/csv'
 import {
   type Coord,
@@ -137,7 +137,7 @@ async function main() {
   }
 
   // --- 駅（同名・300m以内のまとまり = 元データのグループコード単位） ---
-  type Member = { code: string; key: string; center: Coord }
+  type Member = { code: string; key: string; center: Coord; ends: Coord[]; lengthKm: number }
   const groups = new Map<string, { name: string; members: Member[] }>()
   for (const f of stationFeatures) {
     const { company, line } = fix(str(f.properties.N02_004), str(f.properties.N02_003))
@@ -147,6 +147,8 @@ async function main() {
       code: str(f.properties.N02_005c),
       key: `${company}|${line}`,
       center: centroid(f.geometry.coordinates as Coord[]),
+      ends: [(f.geometry.coordinates as Coord[])[0], (f.geometry.coordinates as Coord[]).at(-1)!],
+      lengthKm: lengthKm(f.geometry.coordinates as Coord[]),
     })
   }
   const usedStationIds = new Set<string>()
@@ -255,7 +257,7 @@ async function main() {
   // --- 路線ごとの駅の並びと地図用の線形 ---
   const lines: Line[] = []
   const networkFeatures: unknown[] = []
-  const membersByLine = new Map<string, { id: string; center: Coord }[]>()
+  const membersByLine = new Map<string, { id: string; center: Coord; ends: Coord[]; lengthKm: number }[]>()
   type Stop = { id: string; path: number; along: number }
   const geoByKey = new Map<string, { id: string; paths: Coord[][]; stops: Stop[] }>()
   for (const g of sortedGroups) {
@@ -264,7 +266,7 @@ async function main() {
       const lid = lineIds.get(m.key)
       if (!lid) continue
       if (!membersByLine.has(lid)) membersByLine.set(lid, [])
-      membersByLine.get(lid)!.push({ id, center: m.center })
+      membersByLine.get(lid)!.push({ id, center: m.center, ends: m.ends, lengthKm: m.lengthKm })
     }
   }
   for (const [key, d] of lineDrafts) {
@@ -437,6 +439,36 @@ async function main() {
     line.bbox = bboxOf([...feature.geometry.coordinates.flat()]).map((v) => Math.round(v * 1e4) / 1e4) as Line['bbox']
   }
 
+  // --- 乗換検索用の駅のつながり（線路でとなり合う駅と、線路に沿った駅間距離） ---
+  const routes: Record<string, [string, string, number][]> = {}
+  const edgeKm = new Map<string, number>()
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
+  for (const [key, d] of lineDrafts) {
+    const id = lineIds.get(key)!
+    const edges = stationAdjacency(d.segments, membersByLine.get(id) ?? [])
+    routes[id] = edges.map(([a, b, km]) => [a, b, Math.round(km * 100) / 100])
+    for (const [a, b, km] of edges) edgeKm.set(pairKey(a, b), km)
+  }
+  // 通称区間・直通区間は駅の並びのとなり同士をつなぐ（距離は元の路線の駅間、無ければ直線距離）
+  let straight = 0
+  for (const l of lines) {
+    if (!l.via && !l.through) continue
+    const seq = l.loop ? [...l.stations, l.stations[0]] : l.stations
+    routes[l.id] = seq.slice(1).map((b, i) => {
+      const a = seq[i]
+      let km = edgeKm.get(pairKey(a, b))
+      if (km == null) {
+        straight++
+        const [sa, sb] = [stations.get(a)!, stations.get(b)!]
+        km = haversineKm([sa.lon, sa.lat], [sb.lon, sb.lat])
+      }
+      return [a, b, Math.round(km * 100) / 100]
+    })
+  }
+  const linked = new Set(Object.values(routes).flatMap((es) => es.flatMap(([a, b]) => [a, b])))
+  const isolated = [...stations.values()].filter((st) => !linked.has(st.id))
+  console.log(`routes: edges=${Object.values(routes).reduce((n, es) => n + es.length, 0)} straight=${straight} isolated=${isolated.length} (${isolated.slice(0, 8).map((s) => s.name).join('・')})`)
+
   // 通過する都道府県（駅の並び順で最初に現れた順）
   for (const l of lines) {
     l.prefs = [...new Set(l.stations.map((id) => stations.get(id)!.pref).filter((p): p is string => !!p))]
@@ -558,6 +590,7 @@ async function main() {
   )
   writeFileSync(join(OUT, 'companies.json'), JSON.stringify(companyList))
   writeFileSync(join(OUT, 'vehicles.json'), JSON.stringify(vehicles))
+  writeFileSync(join(OUT, 'routes.json'), JSON.stringify(routes))
   writeFileSync(join(OUT, 'network.geojson'), JSON.stringify({ type: 'FeatureCollection', features: networkFeatures }))
   console.log(
     `lines=${lines.length} stations=${stationList.length} companies=${companies.size} ` +

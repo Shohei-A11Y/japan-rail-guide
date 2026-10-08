@@ -34,6 +34,7 @@ export function Header() {
       <nav>
         <a href={href.lines()}>路線</a>
         <a href={href.prefs()}>地域</a>
+        <a href={href.route()}>乗換</a>
         <a href={href.vehicles()}>車両</a>
         <a href={href.rankings()}>ランキング</a>
         <a href={href.search()}>検索</a>

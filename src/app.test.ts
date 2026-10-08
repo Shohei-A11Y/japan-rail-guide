@@ -7,6 +7,7 @@ import { describeLine, describeStation } from './describe'
 import { parseCommons, parseSummary, stripHtml } from './wiki'
 import type { Station } from './types'
 import { parseFavorites, toggle } from './favorites'
+import { buildGraph, findJourney, findJourneys } from './route'
 
 describe('router', () => {
   it('ハッシュからページを判定する', () => {
@@ -144,5 +145,42 @@ describe('お気に入り', () => {
     const b = toggle(a, 'station', 'S2')
     expect(b.station).toEqual(['S2', 'S1'])
     expect(toggle(b, 'station', 'S1').station).toEqual(['S2'])
+  })
+})
+
+describe('乗換', () => {
+  // A─B─C─D を路線X、B─E─D を路線Y（近道だが乗換が要る）、C─F を路線Z
+  const graph = buildGraph({
+    X: [
+      ['A', 'B', 1],
+      ['B', 'C', 5],
+      ['C', 'D', 5],
+    ],
+    Y: [
+      ['B', 'E', 1],
+      ['E', 'D', 1],
+    ],
+    Z: [['C', 'F', 2]],
+  })
+  it('乗換を重く見ると乗換なしの経路、軽く見ると近道', () => {
+    expect(findJourney(graph, 'A', 'D', 1000)).toMatchObject({ transfers: 0, km: 11 })
+    const short = findJourney(graph, 'A', 'D', 1)!
+    expect(short).toMatchObject({ transfers: 1, km: 3 })
+    expect(short.legs.map((l) => [l.line, l.stations])).toEqual([
+      ['X', ['A', 'B']],
+      ['Y', ['B', 'E', 'D']],
+    ])
+  })
+  it('候補を乗換の少ない順に並べ、同じ乗り継ぎはまとめる', () => {
+    const js = findJourneys(graph, 'A', 'D')
+    expect(js.map((j) => j.transfers)).toEqual([0, 1])
+  })
+  it('つながらない・同じ駅なら経路なし', () => {
+    expect(findJourneys(graph, 'A', 'Q')).toEqual([])
+    expect(findJourney(graph, 'A', 'A', 10)).toBeNull()
+  })
+  it('URLの出発・到着を読む', () => {
+    expect(parseRoute('#/route?from=S1&to=S2')).toEqual({ page: 'route', from: 'S1', to: 'S2' })
+    expect(href.route('S1', '')).toBe('#/route?from=S1')
   })
 })

@@ -30,7 +30,14 @@ export function StationPage({ data, id }: { data: RailData; id: string }) {
           ))}
         </div>
       </div>
-      <PageActions kind="station" id={st.id} title={`${st.name}駅`} />
+      <PageActions kind="station" id={st.id} title={`${st.name}駅`}>
+        <a className="action" href={href.route(st.id, '')}>
+          ここから乗換
+        </a>
+        <a className="action" href={href.route('', st.id)}>
+          ここまで
+        </a>
+      </PageActions>
       <Intro text={describeStation(st, data)} />
 
       <dl className="facts">

@@ -11,6 +11,7 @@ import { NotFound } from './pages/NotFound'
 import { PrefPage } from './pages/PrefPage'
 import { PrefsPage } from './pages/PrefsPage'
 import { RankingsPage } from './pages/RankingsPage'
+import { RoutePage } from './pages/RoutePage'
 import { SearchPage } from './pages/SearchPage'
 import { StationPage } from './pages/StationPage'
 import { VehiclePage } from './pages/VehiclePage'
@@ -78,6 +79,8 @@ function Routed({ route, data }: { route: Route; data: RailData }) {
       return <VehiclePage key={route.id} data={data} id={route.id} />
     case 'favorites':
       return <FavoritesPage data={data} />
+    case 'route':
+      return <RoutePage data={data} from={route.from} to={route.to} />
     case 'about':
       return <AboutPage data={data} />
     default:
@@ -107,6 +110,10 @@ function titleOf(route: Route, data: RailData): string {
     if (v) return `${v.name} | ${app}`
   }
   if (route.page === 'favorites') return `お気に入り | ${app}`
+  if (route.page === 'route') {
+    const [a, b] = [data.stations.get(route.from), data.stations.get(route.to)]
+    return a && b ? `${a.name}→${b.name}の乗換 | ${app}` : `乗換 | ${app}`
+  }
   if (route.page === 'about') return `出典・説明 | ${app}`
   return app
 }

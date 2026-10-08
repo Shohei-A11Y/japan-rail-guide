@@ -148,3 +148,62 @@ export function shortestPath(segments: Coord[][], from: Coord, to: Coord, gapKm 
   for (const e of edges) coords.push(...e.coords.slice(1))
   return coords
 }
+
+/**
+ * 1路線の区間の集まりから、線路でとなり合う駅の組と駅間距離（km）を求める。
+ * 駅は両端の座標（元データでは駅の線形の両端が区間の端点と一致する）で与える。
+ * 各駅から線路をたどり、ほかの駅に着いたらそこで止める。距離は駅の中心どうし（ホームの長さの半分ずつを足す）。
+ */
+export function stationAdjacency(
+  segments: Coord[][],
+  stops: { id: string; ends: Coord[]; lengthKm: number }[],
+): [string, string, number][] {
+  const key = (c: Coord) => `${c[0].toFixed(6)},${c[1].toFixed(6)}`
+  const adj = new Map<string, { to: string; len: number }[]>()
+  const add = (a: string, b: string, len: number) => {
+    if (!adj.has(a)) adj.set(a, [])
+    adj.get(a)!.push({ to: b, len })
+  }
+  for (const seg of segments) {
+    if (seg.length < 2) continue
+    const a = key(seg[0])
+    const b = key(seg[seg.length - 1])
+    const len = lengthKm(seg)
+    add(a, b, len)
+    add(b, a, len)
+  }
+  const stationAt = new Map<string, { id: string; half: number }>()
+  for (const s of stops) for (const c of s.ends) stationAt.set(key(c), { id: s.id, half: s.lengthKm / 2 })
+  const pairs = new Map<string, [string, string, number]>()
+  for (const s of stops) {
+    const dist = new Map<string, number>()
+    const queue: string[] = []
+    for (const c of s.ends) {
+      dist.set(key(c), s.lengthKm / 2)
+      queue.push(key(c))
+    }
+    while (queue.length) {
+      // 未確定の中で最も近い点（1駅から次の駅までの点は少ないので線形探索で十分）
+      let bi = 0
+      for (let i = 1; i < queue.length; i++) if (dist.get(queue[i])! < dist.get(queue[bi])!) bi = i
+      const node = queue.splice(bi, 1)[0]
+      const d = dist.get(node)!
+      const other = stationAt.get(node)
+      if (other && other.id !== s.id) {
+        const [a, b] = s.id < other.id ? [s.id, other.id] : [other.id, s.id]
+        const k = `${a}|${b}`
+        const total = d + other.half
+        if (!pairs.has(k) || pairs.get(k)![2] > total) pairs.set(k, [a, b, total])
+        continue
+      }
+      for (const e of adj.get(node) ?? []) {
+        const nd = d + e.len
+        if (nd < (dist.get(e.to) ?? Infinity)) {
+          if (!dist.has(e.to)) queue.push(e.to)
+          dist.set(e.to, nd)
+        }
+      }
+    }
+  }
+  return [...pairs.values()].sort((x, y) => x[0].localeCompare(y[0]) || x[1].localeCompare(y[1]))
+}
