@@ -51,3 +51,17 @@ export function companyStats(data: RailData): CompanyStats[] {
 
 /** 駅名の文字数（サロゲートペアも1文字として数える） */
 export const nameLength = (s: Station) => [...s.name].length
+
+/** 同じ名前の駅（別の都道府県にもあるもの）を、駅の数の多い順に */
+export function sameNameStations(stations: Iterable<Station>, n: number): { name: string; stations: Station[] }[] {
+  const byName = new Map<string, Station[]>()
+  for (const s of stations) {
+    if (!byName.has(s.name)) byName.set(s.name, [])
+    byName.get(s.name)!.push(s)
+  }
+  return [...byName]
+    .filter(([, ss]) => new Set(ss.map((s) => s.pref)).size > 1)
+    .sort(([a, x], [b, y]) => y.length - x.length || a.localeCompare(b, 'ja'))
+    .slice(0, n)
+    .map(([name, ss]) => ({ name, stations: ss.sort((a, b) => b.lat - a.lat) }))
+}

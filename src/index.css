@@ -963,3 +963,83 @@ a.action {
   flex-basis: 100%;
   margin-top: 0;
 }
+
+/* 駅名であそぶ */
+.picker-single {
+  margin-bottom: 8px;
+}
+.quiz-card {
+  margin: 12px 0 16px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.quiz-name {
+  margin: 4px 0 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.quiz-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.quiz-choices button {
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.quiz-choices button.right {
+  border-color: #1a7f37;
+  background: #dafbe1;
+  color: #0f5323;
+  font-weight: 700;
+}
+.quiz-choices button.wrong {
+  border-color: #cf222e;
+  background: #ffebe9;
+  color: #82071e;
+}
+.quiz-choices button.dim {
+  opacity: 0.55;
+}
+@media (prefers-color-scheme: dark) {
+  .quiz-choices button.right {
+    background: #12361f;
+    color: #7ee2a0;
+  }
+  .quiz-choices button.wrong {
+    background: #3d1418;
+    color: #ffa198;
+  }
+}
+.quiz-feedback {
+  margin-top: 12px;
+}
+.quiz-result {
+  font-size: 1.4rem;
+}
+.shiritori {
+  margin: 12px 0;
+  padding-left: 1.6em;
+}
+.shiritori li {
+  padding: 4px 0;
+}
+.shiritori li a {
+  margin-right: 8px;
+  font-weight: 700;
+}
+.same-name h3 {
+  margin: 12px 0 4px;
+  font-size: 1rem;
+}

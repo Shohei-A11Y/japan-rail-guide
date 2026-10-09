@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
 import { LineBadge, Notice, Page } from '../components/parts'
+import { StationPicker } from '../components/StationPicker'
 import { type MapRoute, RailMap } from '../components/RailMap'
 import { type RailData, useRouteGraph } from '../data'
 import { formatNumber } from '../format'
 import { type Journey, findJourneys } from '../route'
 import { href } from '../router'
-import { search } from '../search'
-import type { Station } from '../types'
 
 export function RoutePage({ data, from, to }: { data: RailData; from: string; to: string }) {
   const graph = useRouteGraph()
@@ -53,73 +52,6 @@ export function RoutePage({ data, from, to }: { data: RailData; from: string; to
 
 const go = (from: string, to: string) => {
   window.location.hash = href.route(from, to)
-}
-
-function StationPicker({
-  data,
-  label,
-  station,
-  onPick,
-}: {
-  data: RailData
-  label: string
-  station?: Station
-  onPick: (id: string) => void
-}) {
-  const [text, setText] = useState(station?.name ?? '')
-  const [open, setOpen] = useState(false)
-  const candidates = useMemo(() => (open && text.trim() ? search(data, text, 8).stations : []), [data, text, open])
-  return (
-    <div className="route-picker">
-      <label>
-        <span className="route-picker-label">{label}</span>
-        <input
-          type="search"
-          value={text}
-          placeholder="駅名（ひらがな・ローマ字も可）"
-          onChange={(e) => {
-            setText(e.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && candidates[0]) onPick(candidates[0].id)
-            if (e.key === 'Escape') setOpen(false)
-          }}
-          aria-autocomplete="list"
-        />
-      </label>
-      {candidates.length > 0 && (
-        <ul className="route-candidates" role="listbox">
-          {candidates.map((s) => (
-            <li key={s.id} role="option" aria-selected={false}>
-              <button
-                // 入力欄のフォーカスが外れる前に選べるよう mousedown で止める
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setOpen(false)
-                  onPick(s.id)
-                }}
-              >
-                <span className="route-candidate-name">{s.name}</span>
-                <span className="muted small">
-                  {s.pref}
-                  {s.city}
-                </span>
-                <span className="badge-row wrap">
-                  {s.lines.slice(0, 3).map((id) => {
-                    const l = data.lines.get(id)
-                    return l ? <LineBadge key={id} line={l} small link={false} /> : null
-                  })}
-                  {s.lines.length > 3 && <span className="muted small">ほか{s.lines.length - 3}</span>}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
 }
 
 function Results({ data, journeys }: { data: RailData; journeys: Journey[] }) {

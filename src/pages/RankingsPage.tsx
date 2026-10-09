@@ -3,7 +3,7 @@ import { StationList } from '../components/lists'
 import { LineBadge, Notice, Page } from '../components/parts'
 import type { RailData } from '../data'
 import { formatKm, formatNumber } from '../format'
-import { companyStats, dateKey, formatDate, nameLength, rank } from '../rankings'
+import { companyStats, dateKey, formatDate, nameLength, rank, sameNameStations } from '../rankings'
 import { href } from '../router'
 import type { Line } from '../types'
 
@@ -56,6 +56,7 @@ export function RankingsPage({ data }: { data: RailData }) {
       east: rank(stations, (s) => s.lon, 1),
       west: rank(stations, (s) => s.lon, 1, 'asc'),
       longNames: rank(stations, nameLength, 10),
+      sameName: sameNameStations(stations, 10),
       oneChar: stations.filter((s) => nameLength(s) === 1).sort((a, b) => a.name.localeCompare(b.name, 'ja')),
       companiesByLength: rank(companies, (c) => c.lengthKm, 10),
       companiesByStations: rank(companies, (c) => c.stations, 10),
@@ -66,6 +67,9 @@ export function RankingsPage({ data }: { data: RailData }) {
   return (
     <Page>
       <h1>ランキング・トリビア</h1>
+      <p>
+        <a href={href.play()}>駅名の読み方クイズ・駅名しりとりであそぶ →</a>
+      </p>
       <Notice>
         データから自動で集計しています。延長は地図上の線形から計算した値（営業キロではありません）、開業日はWikidataに登録がある路線・駅だけが対象です。
       </Notice>
@@ -122,6 +126,24 @@ export function RankingsPage({ data }: { data: RailData }) {
 
       <Section title="名前の長い駅">
         <StationList data={data} stations={r.longNames} ordered value={(s) => `${nameLength(s)}文字`} />
+      </Section>
+      <Section title="同じ名前の駅" note="別の都道府県にも同じ名前の駅があるもの。駅の数の多い順（北から順に並べています）。">
+        {r.sameName.map((g) => (
+          <div key={g.name} className="same-name">
+            <h3>
+              {g.name}
+              <span className="muted small">（{g.stations.length}駅）</span>
+            </h3>
+            <div className="chip-row">
+              {g.stations.map((s) => (
+                <a key={s.id} className="chip" href={href.station(s.id)}>
+                  {s.pref}
+                  <span className="muted small">{s.city}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
       </Section>
       <Section title="1文字の駅" note={`${r.oneChar.length}駅`}>
         <div className="chip-row">

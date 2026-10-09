@@ -8,6 +8,7 @@ import { parseCommons, parseSummary, stripHtml } from './wiki'
 import type { Station } from './types'
 import { parseFavorites, toggle } from './favorites'
 import { buildGraph, findJourney, findJourneys } from './route'
+import { kanaPool, lastSound, makeQuestion, quizPool, shiritori, voicingVariants } from './quiz'
 
 describe('router', () => {
   it('ハッシュからページを判定する', () => {
@@ -182,5 +183,60 @@ describe('乗換', () => {
   it('URLの出発・到着を読む', () => {
     expect(parseRoute('#/route?from=S1&to=S2')).toEqual({ page: 'route', from: 'S1', to: 'S2' })
     expect(href.route('S1', '')).toBe('#/route?from=S1')
+  })
+})
+
+describe('駅名であそぶ', () => {
+  const mk = (id: string, name: string, kana: string, passengers = 100): Station => ({
+    id,
+    name,
+    kana,
+    lon: 0,
+    lat: 0,
+    lines: [],
+    passengers,
+  })
+  const stations = [
+    mk('a', '親不知', 'おやしらず'),
+    mk('b', '不動前', 'ふどうまえ'),
+    mk('c', '知多', 'ちた'),
+    mk('d', '大町', 'おおまち'),
+    mk('e', '大町', 'だいまち'), // 読みが2通り → クイズに出さない
+    mk('f', '東京', 'とうきょう'),
+    mk('g', '品川シーサイド', 'しながわシーサイド'),
+    mk('h', '海老名', 'えびな'),
+    mk('i', '中野', 'なかの'),
+  ]
+  const seq = (...xs: number[]) => {
+    let i = 0
+    return () => xs[i++ % xs.length]
+  }
+  it('クイズに出せる駅を選ぶ', () => {
+    const pool = quizPool(stations).map((s) => s.name)
+    expect(pool).toContain('親不知')
+    expect(pool).not.toContain('大町')
+    expect(pool).not.toContain('品川シーサイド')
+  })
+  it('濁点を付け外しした紛らわしい読みを作る', () => {
+    expect(voicingVariants('おやしらず')).toEqual(expect.arrayContaining(['おやじらず', 'おやしらす']))
+    expect(voicingVariants('おやしらず')).not.toContain('おやしらず')
+  })
+  it('正解を1つ含む4択を作る', () => {
+    const q = makeQuestion(quizPool(stations), seq(0, 0.5, 0.3, 0.7))!
+    expect(q.choices).toHaveLength(4)
+    expect(new Set(q.choices).size).toBe(4)
+    expect(q.choices[q.answer]).toBe(q.station.kana)
+  })
+  it('しりとりの次の音（小さい字・長音）', () => {
+    expect(lastSound('とうきょう')).toBe('う')
+    expect(lastSound('しんじゅく')).toBe('く')
+    expect(lastSound('ちゃ')).toBe('や')
+    expect(lastSound('ぱーきんぐえりあー')).toBe('あ')
+  })
+  it('しりとりは読みをつなぎ、同じ読みを使わない', () => {
+    const pool = kanaPool(stations)
+    const chain = shiritori(pool, pool.find((s) => s.name === '海老名')!, seq(0))
+    // えびな → なかの →（「の」で始まる駅がない）
+    expect(chain.map((s) => s.name)).toEqual(['海老名', '中野'])
   })
 })
