@@ -63,6 +63,7 @@ export function HomePage({ data }: { data: RailData }) {
             ★
           </a>
           <a href={href.rankings()}>ランキング</a>
+          <a href={href.timeline()}>年表</a>
           <a href={href.play()}>あそぶ</a>
           <button onClick={random}>ランダム</button>
         </nav>

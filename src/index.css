@@ -209,10 +209,12 @@ h3 {
 }
 .home-links {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
 }
 .home-links a {
+  white-space: nowrap;
   padding: 6px 10px;
   border-radius: 6px;
   text-decoration: none;
@@ -589,6 +591,7 @@ details.city summary {
   color: var(--fg);
 }
 .home-links button {
+  white-space: nowrap;
   padding: 6px 10px;
   border: 0;
   border-radius: 6px;
@@ -1042,4 +1045,65 @@ a.action {
 .same-name h3 {
   margin: 12px 0 4px;
   font-size: 1rem;
+}
+
+/* 年表マップ */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+.timeline-map {
+  flex: 1;
+  min-height: 0;
+}
+.timeline-panel {
+  padding: 10px 16px 14px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+.timeline-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.timeline-year {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.timeline-news {
+  margin: 2px 0 8px;
+  min-height: 1.6em;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.timeline-controls input[type='range'] {
+  flex: 1;
+  min-width: 0;
+}
+.timeline-play {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--card);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.timeline-note {
+  margin: 8px 0 0;
+}
+.timeline-note summary {
+  cursor: pointer;
 }

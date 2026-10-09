@@ -15,6 +15,7 @@ import { RankingsPage } from './pages/RankingsPage'
 import { RoutePage } from './pages/RoutePage'
 import { SearchPage } from './pages/SearchPage'
 import { StationPage } from './pages/StationPage'
+import { TimelinePage } from './pages/TimelinePage'
 import { VehiclePage } from './pages/VehiclePage'
 import { VehiclesPage } from './pages/VehiclesPage'
 import { useServiceWorkerUpdate } from './pwa'
@@ -80,6 +81,8 @@ function Routed({ route, data }: { route: Route; data: RailData }) {
       return <VehiclePage key={route.id} data={data} id={route.id} />
     case 'favorites':
       return <FavoritesPage data={data} />
+    case 'timeline':
+      return <TimelinePage data={data} />
     case 'play':
       return <PlayPage data={data} />
     case 'route':
@@ -113,6 +116,7 @@ function titleOf(route: Route, data: RailData): string {
     if (v) return `${v.name} | ${app}`
   }
   if (route.page === 'favorites') return `お気に入り | ${app}`
+  if (route.page === 'timeline') return `鉄道の年表マップ | ${app}`
   if (route.page === 'play') return `駅名であそぶ | ${app}`
   if (route.page === 'route') {
     const [a, b] = [data.stations.get(route.from), data.stations.get(route.to)]

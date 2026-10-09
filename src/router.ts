@@ -16,6 +16,7 @@ export type Route =
   | { page: 'favorites' }
   | { page: 'route'; from: string; to: string }
   | { page: 'play' }
+  | { page: 'timeline' }
   | { page: 'about' }
   | { page: 'notfound' }
 
@@ -32,6 +33,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'vehicles' && parts.length === 1) return { page: 'vehicles' }
   if (parts[0] === 'favorites' && parts.length === 1) return { page: 'favorites' }
   if (parts[0] === 'play' && parts.length === 1) return { page: 'play' }
+  if (parts[0] === 'timeline' && parts.length === 1) return { page: 'timeline' }
   if (parts[0] === 'route' && parts.length === 1) return { page: 'route', from: params.get('from') ?? '', to: params.get('to') ?? '' }
   if (parts[0] === 'vehicle' && parts[1]) return { page: 'vehicle', id: parts[1] }
   if (parts[0] === 'line' && parts[1]) return { page: 'line', id: parts[1] }
@@ -63,6 +65,7 @@ export const href = {
   vehicle: (id: string) => `#/vehicle/${encodeURIComponent(id)}`,
   about: () => '#/about',
   play: () => '#/play',
+  timeline: () => '#/timeline',
 }
 
 export function useRoute(): Route {

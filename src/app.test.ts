@@ -9,6 +9,7 @@ import type { Station } from './types'
 import { parseFavorites, toggle } from './favorites'
 import { buildGraph, findJourney, findJourneys } from './route'
 import { kanaPool, lastSound, makeQuestion, quizPool, shiritori, voicingVariants } from './quiz'
+import { stationYears, timelineEdges, yearOf } from './timeline'
 
 describe('router', () => {
   it('ハッシュからページを判定する', () => {
@@ -238,5 +239,31 @@ describe('駅名であそぶ', () => {
     const chain = shiritori(pool, pool.find((s) => s.name === '海老名')!, seq(0))
     // えびな → なかの →（「の」で始まる駅がない）
     expect(chain.map((s) => s.name)).toEqual(['海老名', '中野'])
+  })
+})
+
+describe('年表マップ', () => {
+  const mk = (id: string, opened?: string): Station => ({ id, name: id, lon: 0, lat: 0, lines: [], passengers: null, opened })
+  // A(1872)─B(不明)─C(1900)─D(不明)─E(不明、どこにもつながらない)
+  const stations = [mk('A', '1872-10-14'), mk('B'), mk('C', '1900'), mk('D'), mk('E')]
+  const edges = {
+    L: [
+      ['A', 'B', 1],
+      ['B', 'C', 1],
+      ['C', 'D', 1],
+    ] as [string, string, number][],
+  }
+  it('開業年が無い駅はとなりの駅の遅い方の年で補う', () => {
+    const y = stationYears(stations, edges)
+    expect(y.get('A')).toEqual({ year: 1872, estimated: false })
+    expect(y.get('B')).toEqual({ year: 1900, estimated: true })
+    expect(y.get('D')).toEqual({ year: 1900, estimated: true })
+    expect(y.has('E')).toBe(false)
+  })
+  it('区間は両端の駅がそろった年に現れる', () => {
+    const segs = timelineEdges(edges, stationYears(stations, edges))
+    expect(segs.map((e) => e.year)).toEqual([1900, 1900, 1900])
+    expect(yearOf('1872-10')).toBe(1872)
+    expect(yearOf(undefined)).toBeNull()
   })
 })

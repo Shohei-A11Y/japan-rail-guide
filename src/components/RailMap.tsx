@@ -27,7 +27,7 @@ interface Props {
   className?: string
 }
 
-const JAPAN_BOUNDS: [number, number, number, number] = [128.5, 30.5, 146.0, 45.6]
+export const JAPAN_BOUNDS: [number, number, number, number] = [128.5, 30.5, 146.0, 45.6]
 // 乗降客数の多い駅ほど広域から表示する: [レイヤーID, 表示し始めるズーム, 条件]
 const STATION_LAYERS: [string, number, ExpressionSpecification][] = [
   ['stations-major', 4, ['>=', ['get', 'p'], 300000]],
@@ -35,7 +35,26 @@ const STATION_LAYERS: [string, number, ExpressionSpecification][] = [
   ['stations-all', 10.5, ['<', ['get', 'p'], 20000]],
 ]
 
-const darkMode = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+/** 背景の地図（地理院タイル・淡色地図） */
+export const BASE_SOURCE: maplibregl.RasterSourceSpecification = {
+  type: 'raster',
+  tiles: ['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'],
+  tileSize: 256,
+  minzoom: 2,
+  maxzoom: 18,
+  attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>',
+}
+
+export const baseLayer = (dark: boolean): maplibregl.LayerSpecification => ({
+  id: 'base',
+  type: 'raster',
+  source: 'base',
+  paint: dark
+    ? { 'raster-brightness-max': 0.32, 'raster-saturation': -0.6, 'raster-contrast': 0.1 }
+    : { 'raster-saturation': -0.3 },
+})
+
+export const darkMode = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
 
 // 線の太さ: ズームに応じて太くし、新幹線は一段太くする。extra は縁取り用の上乗せ分
 const lineWidth = (extra = 0): ExpressionSpecification => {
@@ -81,15 +100,7 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, route, cl
       style: {
         version: 8,
         sources: {
-          base: {
-            type: 'raster',
-            tiles: ['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            minzoom: 2,
-            maxzoom: 18,
-            attribution:
-              '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>',
-          },
+          base: BASE_SOURCE,
           network: {
             type: 'geojson',
             data: networkUrl,
@@ -99,14 +110,7 @@ export function RailMap({ data, focus, onSelect, bounds, onViewChange, route, cl
           route: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
         },
         layers: [
-          {
-            id: 'base',
-            type: 'raster',
-            source: 'base',
-            paint: dark
-              ? { 'raster-brightness-max': 0.32, 'raster-saturation': -0.6, 'raster-contrast': 0.1 }
-              : { 'raster-saturation': -0.3 },
-          },
+          baseLayer(dark),
           {
             id: 'lines-casing',
             type: 'line',

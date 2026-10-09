@@ -51,7 +51,8 @@ const loadData = once(() =>
 const loadDetails = once(() => getJson<Record<string, StationDetail>>('station-details.json'))
 
 // 乗換検索の駅のつながりは乗換ページでだけ使う
-const loadRoutes = once(() => getJson<RouteEdges>('routes.json').then(buildGraph))
+const loadRouteEdges = once(() => getJson<RouteEdges>('routes.json'))
+const loadRoutes = once(() => loadRouteEdges().then(buildGraph))
 
 export type Loadable<T> = { status: 'loading' } | { status: 'error'; error: string } | { status: 'ready'; data: T }
 export type DataState = Loadable<RailData>
@@ -81,3 +82,6 @@ export function useStationDetail(id: string): StationDetail | null | undefined {
 
 /** 乗換検索のグラフ（routes.json から作る） */
 export const useRouteGraph = (): Loadable<RouteGraph> => useLoad(loadRoutes)
+
+/** 駅のつながり（routes.json そのもの。年表マップで使う） */
+export const useRouteEdges = (): Loadable<RouteEdges> => useLoad(loadRouteEdges)
